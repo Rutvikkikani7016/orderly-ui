@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { selectPlatforms, getPlatformAccounts } from '../api/platformAccounts.js';
+import {
+  selectPlatforms,
+  getPlatformAccounts,
+  getFlipkartConnectUrl,
+} from '../api/platformAccounts.js';
 import { PLATFORM } from '../constants/enums.js';
 
 const AVAILABLE_PLATFORMS = [
@@ -49,20 +53,51 @@ export default function Onboarding() {
   const [selectedPlatforms, setSelectedPlatforms] = useState(['flipkart', 'meesho']);
   const [accounts, setAccounts] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [connectingId, setConnectingId] = useState(null);
 
+  // Load existing accounts and handle OAuth return query params
   useEffect(() => {
-    async function loadExisting() {
+    async function initOnboarding() {
       try {
+        // 1. Check for OAuth callback query parameters in URL
+        const searchParams = new URLSearchParams(window.location.search);
+        const connectStatus = searchParams.get('connect');
+        const platform = searchParams.get('platform');
+        const reason = searchParams.get('reason');
+
+        if (connectStatus === 'success') {
+          toast.success(
+            `${platform ? platform.toUpperCase() : 'Flipkart'} seller account connected successfully!`
+          );
+          // Clean the query params from the browser address bar without reloading
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setStep(2);
+        } else if (connectStatus === 'error') {
+          toast.error(
+            `Could not connect ${platform || 'Flipkart'}${
+              reason ? `: ${reason.replace(/_/g, ' ')}` : ''
+            }`
+          );
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setStep(2);
+        }
+
+        // 2. Fetch platform accounts
         const existing = await getPlatformAccounts();
         if (existing && existing.length > 0) {
           setAccounts(existing);
           setSelectedPlatforms(existing.map((a) => a.platform));
+          // If we had connected accounts, open step 2 directly
+          if (connectStatus === 'success' || connectStatus === 'error') {
+            setStep(2);
+          }
         }
       } catch (err) {
-        // Non-fatal on load
+        // Non-fatal on initial load
       }
     }
-    loadExisting();
+
+    initOnboarding();
   }, []);
 
   function togglePlatform(key) {
@@ -87,8 +122,42 @@ export default function Onboarding() {
     }
   }
 
-  function handleConnect(platformName) {
-    toast.info(`Coming soon — OAuth setup for ${platformName}`);
+  // Real OAuth trigger for Flipkart
+  async function handleConnectAccount(account) {
+    if (account.platform === 'flipkart') {
+      setConnectingId(account.id);
+      try {
+        const data = await getFlipkartConnectUrl(account.id);
+        if (data?.authorizeUrl) {
+          toast.loading('Redirecting to Flipkart Seller Hub…');
+          window.location.href = data.authorizeUrl;
+        } else {
+          toast.error('Failed to generate Flipkart authorize URL.');
+        }
+      } catch (err) {
+        toast.error(
+          err.response?.data?.message || 'Could not initiate Flipkart connection.'
+        );
+      } finally {
+        setConnectingId(null);
+      }
+    } else {
+      const platformMeta = AVAILABLE_PLATFORMS.find((p) => p.key === account.platform) || {
+        name: account.platform,
+      };
+      toast.info(`Coming soon — OAuth setup for ${platformMeta.name}`);
+    }
+  }
+
+  function getStatusBadge(status) {
+    switch (status) {
+      case 'connected':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'error':
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      default:
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+    }
   }
 
   return (
@@ -166,7 +235,7 @@ export default function Onboarding() {
           <div>
             <h1 className="text-xl font-bold text-ink tracking-tight">Connected Sales Channels</h1>
             <p className="text-[11px] text-gray-500 mt-0.5">
-              Connect your seller accounts to enable automatic multi-platform synchronization.
+              Connect your seller accounts to enable automatic multi-platform order and inventory synchronization.
             </p>
           </div>
 
@@ -175,6 +244,9 @@ export default function Onboarding() {
               const platformMeta = AVAILABLE_PLATFORMS.find((p) => p.key === account.platform) || {
                 name: account.platform,
               };
+
+              const isConnected = account.status === 'connected';
+              const isConnecting = connectingId === account.id;
 
               return (
                 <div
@@ -187,18 +259,44 @@ export default function Onboarding() {
                     </div>
                     <div>
                       <p className="text-xs font-bold text-ink capitalize">{platformMeta.name}</p>
-                      <span className="inline-block text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        {account.status || 'Active'}
+                      <span
+                        className={`inline-block text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded border ${getStatusBadge(
+                          account.status
+                        )}`}
+                      >
+                        {account.status || 'Pending'}
                       </span>
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleConnect(platformMeta.name)}
-                    className="h-8 px-3 text-xs font-semibold bg-white hover:bg-gray-50 border border-border text-ink rounded-lg transition-colors shadow-xs"
-                  >
-                    Manage Settings
-                  </button>
+                  <div>
+                    {account.platform === 'flipkart' ? (
+                      <button
+                        onClick={() => handleConnectAccount(account)}
+                        disabled={isConnecting}
+                        className={`h-8 px-3.5 text-xs font-semibold rounded-lg transition-colors shadow-xs flex items-center space-x-1.5 ${
+                          isConnected
+                            ? 'bg-white hover:bg-gray-50 border border-border text-ink'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        }`}
+                      >
+                        {isConnecting ? (
+                          <span>Connecting…</span>
+                        ) : isConnected ? (
+                          <span>Reconnect</span>
+                        ) : (
+                          <span>Connect Flipkart →</span>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleConnectAccount(account)}
+                        className="h-8 px-3 text-xs font-semibold bg-white hover:bg-gray-50 border border-border text-ink rounded-lg transition-colors shadow-xs"
+                      >
+                        Manage Settings
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}

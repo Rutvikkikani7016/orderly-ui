@@ -9,3 +9,8 @@ export async function selectPlatforms(platforms) {
   const { data } = await apiClient.post('/platform-accounts/select', { platforms });
   return data.data;
 }
+
+export async function getFlipkartConnectUrl(platformAccountId) {
+  const { data } = await apiClient.get(`/platform-accounts/${platformAccountId}/connect/flipkart`);
+  return data.data;
+}

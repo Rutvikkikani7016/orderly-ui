@@ -2,6 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { getOrders, importOrdersCsv } from '../api/orders.js';
 import { getPlatformAccounts } from '../api/platformAccounts.js';
+import IndiaMapModal from '../components/IndiaMapModal.jsx';
+import CustomDropdown from '../components/CustomDropdown.jsx';
+import DateRangeFilter from '../components/DateRangeFilter.jsx';
+
+
+
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -31,8 +37,9 @@ export default function Orders() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // Import Modal State
+  // Modal States
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isIndiaMapModalOpen, setIsIndiaMapModalOpen] = useState(false);
   const [importPlatform, setImportPlatform] = useState('auto');
   const [selectedFile, setSelectedFile] = useState(null);
   const [detectedPlatform, setDetectedPlatform] = useState(null);
@@ -261,6 +268,46 @@ export default function Orders() {
   const totalReturnAndCancelRate =
     metrics.totalOrders > 0 ? ((totalReturnsAndCancelled / metrics.totalOrders) * 100).toFixed(1) : '0';
 
+  const channelOptions = [
+    { value: 'all', label: 'All Channels' },
+    ...activePlatforms.map((p) => ({
+      value: p.id,
+      label: p.name,
+      icon: p.icon,
+    })),
+  ];
+
+  const statusOptions = [
+    { value: 'all', label: 'All Statuses' },
+    { value: 'delivered', label: 'Delivered', badge: 'Complete' },
+    { value: 'returns_and_cancelled', label: 'Returns & Cancelled', badge: 'Combined' },
+    { value: 'returned', label: 'Returns / RTO' },
+    { value: 'cancelled', label: 'Cancelled' },
+    { value: 'exchanged', label: 'Exchanged' },
+    { value: 'shipped', label: 'Shipped' },
+    { value: 'placed', label: 'Placed' },
+  ];
+
+  const datePresetOptions = [
+    { value: 'all', label: 'All Time' },
+    { value: 'today', label: 'Today' },
+    { value: '7days', label: 'Last 7 Days' },
+    { value: '30days', label: 'Last 30 Days' },
+    { value: 'thisMonth', label: 'This Month' },
+    { value: 'custom', label: 'Custom Range' },
+  ];
+
+  const pageSizeOptions = [
+    { value: 5, label: '5 rows' },
+    { value: 10, label: '10 rows' },
+    { value: 15, label: '15 rows' },
+    { value: 20, label: '20 rows' },
+    { value: 25, label: '25 rows' },
+    { value: 50, label: '50 rows' },
+    { value: 100, label: '100 rows' },
+  ];
+
+
   return (
     <div className="p-4 md:p-5 font-sans space-y-3.5 max-w-full">
       {/* Header */}
@@ -272,18 +319,30 @@ export default function Orders() {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setSelectedFile(null);
-            setIsImportModalOpen(true);
-          }}
-          className="h-9 px-4 text-xs font-semibold bg-ink text-white hover:bg-black rounded-lg transition-colors flex items-center space-x-2 shadow-xs"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-          </svg>
-          <span>Import Orders CSV</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setIsIndiaMapModalOpen(true)}
+            className="h-9 px-3.5 text-xs font-semibold bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-ink hover:border-gray-400 rounded-lg transition-all flex items-center space-x-2 shadow-2xs group"
+          >
+            <svg className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+            <span>State Heatmap</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setSelectedFile(null);
+              setIsImportModalOpen(true);
+            }}
+            className="h-9 px-4 text-xs font-semibold bg-ink text-white hover:bg-black rounded-lg transition-colors flex items-center space-x-2 shadow-xs"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span>Import Orders CSV</span>
+          </button>
+        </div>
       </div>
 
       {/* Top High-Level Metrics */}
@@ -535,89 +594,51 @@ export default function Orders() {
               </div>
 
               {/* Channel Filter Dropdown (Filtered to Selected Platforms) */}
-              <select
+              <CustomDropdown
                 value={platformFilter}
-                onChange={(e) => setPlatformFilter(e.target.value)}
-                className="h-9 px-3 text-xs bg-white border border-border text-ink rounded-md outline-none focus:border-accent focus:ring-1 focus:ring-accent capitalize"
-              >
-                <option value="all">All Channels</option>
-                {activePlatforms.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setPlatformFilter(val)}
+                options={channelOptions}
+                size="sm"
+              />
 
               {/* Status Filter Dropdown */}
-              <select
+              <CustomDropdown
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-9 px-3 text-xs bg-white border border-border text-ink rounded-md outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-              >
-                <option value="all">All Statuses</option>
-                <option value="delivered">Delivered</option>
-                <option value="returns_and_cancelled">Returns & Cancelled (Combined)</option>
-                <option value="returned">Returns / RTO Only</option>
-                <option value="cancelled">Cancelled Only</option>
-                <option value="exchanged">Exchanged Only</option>
-                <option value="shipped">Shipped</option>
-                <option value="placed">Placed</option>
-              </select>
+                onChange={(val) => setStatusFilter(val)}
+                options={statusOptions}
+                size="sm"
+              />
             </div>
 
             {/* Date Preset Selector */}
             <div className="flex items-center space-x-1.5">
               <span className="text-[11px] text-gray-500 font-medium">Period:</span>
-              <select
+              <CustomDropdown
                 value={datePreset}
-                onChange={(e) => applyDatePreset(e.target.value)}
-                className="h-9 px-3 text-xs bg-white border border-border text-ink rounded-md outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-              >
-                <option value="all">All Time</option>
-                <option value="today">Today</option>
-                <option value="7days">Last 7 Days</option>
-                <option value="30days">Last 30 Days</option>
-                <option value="thisMonth">This Month</option>
-                <option value="custom">Custom Range</option>
-              </select>
+                onChange={(val) => applyDatePreset(val)}
+                options={datePresetOptions}
+                size="sm"
+              />
             </div>
           </div>
 
           {/* Date Range Inputs (Visible when custom or date selected) */}
           {(datePreset === 'custom' || startDate || endDate) && (
-            <div className="pt-2 border-t border-dashed border-border flex flex-wrap items-center justify-between gap-2.5 text-xs">
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-500">From:</span>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => {
-                    setDatePreset('custom');
-                    setStartDate(e.target.value);
-                  }}
-                  className="h-8 px-2.5 bg-white border border-border rounded-md text-xs text-ink outline-none focus:border-accent"
-                />
-
-                <span className="text-gray-500 ml-2">To:</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => {
-                    setDatePreset('custom');
-                    setEndDate(e.target.value);
-                  }}
-                  className="h-8 px-2.5 bg-white border border-border rounded-md text-xs text-ink outline-none focus:border-accent"
-                />
-              </div>
-
-              {(startDate || endDate || datePreset !== 'all') && (
-                <button
-                  onClick={() => applyDatePreset('all')}
-                  className="text-[11px] text-gray-500 hover:text-ink underline font-medium"
-                >
-                  Clear Date Filter
-                </button>
-              )}
+            <div className="pt-2 border-t border-dashed border-border">
+              <DateRangeFilter
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={(val) => {
+                  setDatePreset('custom');
+                  setStartDate(val);
+                }}
+                onEndDateChange={(val) => {
+                  setDatePreset('custom');
+                  setEndDate(val);
+                }}
+                onClear={() => applyDatePreset('all')}
+                showClear={Boolean(startDate || endDate || datePreset !== 'all')}
+              />
             </div>
           )}
         </div>
@@ -754,22 +775,15 @@ export default function Orders() {
               </div>
               <div className="flex items-center space-x-1.5 border-l border-border pl-3">
                 <span className="text-gray-500">Rows per page:</span>
-                <select
+                <CustomDropdown
                   value={pagination.limit}
-                  onChange={(e) => {
-                    const newLimit = parseInt(e.target.value, 10);
+                  onChange={(val) => {
+                    const newLimit = parseInt(val, 10);
                     fetchOrders(1, platformFilter, statusFilter, search, startDate, endDate, newLimit);
                   }}
-                  className="h-7 px-2 bg-white border border-border text-ink rounded font-medium outline-none focus:border-accent text-xs"
-                >
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={15}>15</option>
-                  <option value={20}>20</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
+                  options={pageSizeOptions}
+                  size="xs"
+                />
               </div>
             </div>
 
@@ -921,6 +935,13 @@ export default function Orders() {
           </div>
         </div>
       )}
+
+      {/* India State-wise Heatmap Modal */}
+      <IndiaMapModal
+        isOpen={isIndiaMapModalOpen}
+        onClose={() => setIsIndiaMapModalOpen(false)}
+      />
     </div>
   );
 }
+
