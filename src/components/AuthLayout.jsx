@@ -6,7 +6,7 @@ export default function AuthLayout({ children }) {
         <div className="hidden md:flex flex-col justify-between w-2/5 bg-white p-10">
           <div>
             <div className="mb-10">
-              <img src="/logo-full.png" alt="Orderly" className="h-8 object-contain" />
+              <img src="/logo-full.png" alt="OrderNest" className="h-8 object-contain" />
             </div>
             <p className="text-xl font-medium leading-snug mb-3">
               One dashboard for every order and every rupee.

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 
 /**
  * Reusable, high-aesthetic Custom Dropdown component
- * Matches Orderly's modern SaaS theme with custom chevron, checkmarks, badges & animations.
+ * Matches OrderNest's modern SaaS theme with custom chevron, checkmarks, badges & animations.
  */
 export default function CustomDropdown({
   value,

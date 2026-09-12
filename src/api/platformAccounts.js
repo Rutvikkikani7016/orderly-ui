@@ -14,3 +14,8 @@ export async function getFlipkartConnectUrl(platformAccountId) {
   const { data } = await apiClient.get(`/platform-accounts/${platformAccountId}/connect/flipkart`);
   return data.data;
 }
+
+export async function disconnectPlatformAccount(platformAccountId) {
+  const { data } = await apiClient.post(`/platform-accounts/${platformAccountId}/disconnect`);
+  return data.data;
+}

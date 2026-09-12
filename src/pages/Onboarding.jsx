@@ -5,6 +5,7 @@ import {
   selectPlatforms,
   getPlatformAccounts,
   getFlipkartConnectUrl,
+  disconnectPlatformAccount,
 } from '../api/platformAccounts.js';
 import { PLATFORM } from '../constants/enums.js';
 
@@ -54,6 +55,7 @@ export default function Onboarding() {
   const [accounts, setAccounts] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [connectingId, setConnectingId] = useState(null);
+  const [disconnectingId, setDisconnectingId] = useState(null);
 
   // Load existing accounts and handle OAuth return query params
   useEffect(() => {
@@ -69,7 +71,7 @@ export default function Onboarding() {
           toast.success(
             `${platform ? platform.toUpperCase() : 'Flipkart'} seller account connected successfully!`
           );
-          // Clean the query params from the browser address bar without reloading
+          // Clean query params without full page reload
           window.history.replaceState({}, document.title, window.location.pathname);
           setStep(2);
         } else if (connectStatus === 'error') {
@@ -87,7 +89,6 @@ export default function Onboarding() {
         if (existing && existing.length > 0) {
           setAccounts(existing);
           setSelectedPlatforms(existing.map((a) => a.platform));
-          // If we had connected accounts, open step 2 directly
           if (connectStatus === 'success' || connectStatus === 'error') {
             setStep(2);
           }
@@ -149,10 +150,30 @@ export default function Onboarding() {
     }
   }
 
+  // Disconnect account
+  async function handleDisconnectAccount(accountId) {
+    if (!window.confirm('Are you sure you want to disconnect this marketplace account?')) {
+      return;
+    }
+
+    setDisconnectingId(accountId);
+    try {
+      await disconnectPlatformAccount(accountId);
+      toast.success('Account disconnected');
+      const updated = await getPlatformAccounts();
+      setAccounts(updated);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to disconnect account.');
+    } finally {
+      setDisconnectingId(null);
+    }
+  }
+
   function getStatusBadge(status) {
     switch (status) {
       case 'connected':
         return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'needs_reconnect':
       case 'error':
         return 'bg-rose-50 text-rose-700 border-rose-200';
       default:
@@ -246,48 +267,76 @@ export default function Onboarding() {
               };
 
               const isConnected = account.status === 'connected';
+              const needsReconnect = account.status === 'needs_reconnect';
               const isConnecting = connectingId === account.id;
+              const isDisconnecting = disconnectingId === account.id;
 
               return (
                 <div
                   key={account.id || account.platform}
-                  className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-white shadow-xs"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl border border-border bg-white shadow-xs gap-3"
                 >
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center">
                       {platformMeta.icon}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-ink capitalize">{platformMeta.name}</p>
-                      <span
-                        className={`inline-block text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded border ${getStatusBadge(
-                          account.status
-                        )}`}
-                      >
-                        {account.status || 'Pending'}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <p className="text-xs font-bold text-ink capitalize">{platformMeta.name}</p>
+                        <span
+                          className={`inline-block text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded border ${getStatusBadge(
+                            account.status
+                          )}`}
+                        >
+                          {needsReconnect ? 'Needs Reconnect' : account.status || 'Pending'}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-0.5">
+                        {isConnected
+                          ? `Seller ID: ${account.platformSellerId || 'Active'} • Auto-syncing`
+                          : needsReconnect
+                          ? 'Token expired or revoked on Flipkart. Re-connect required.'
+                          : 'Not connected yet'}
+                      </p>
                     </div>
                   </div>
 
-                  <div>
+                  <div className="flex items-center space-x-2 self-end sm:self-auto">
                     {account.platform === 'flipkart' ? (
-                      <button
-                        onClick={() => handleConnectAccount(account)}
-                        disabled={isConnecting}
-                        className={`h-8 px-3.5 text-xs font-semibold rounded-lg transition-colors shadow-xs flex items-center space-x-1.5 ${
-                          isConnected
-                            ? 'bg-white hover:bg-gray-50 border border-border text-ink'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
-                        }`}
-                      >
-                        {isConnecting ? (
-                          <span>Connecting…</span>
-                        ) : isConnected ? (
-                          <span>Reconnect</span>
-                        ) : (
-                          <span>Connect Flipkart →</span>
+                      <>
+                        <button
+                          onClick={() => handleConnectAccount(account)}
+                          disabled={isConnecting}
+                          className={`h-8 px-3.5 text-xs font-semibold rounded-lg transition-colors shadow-xs flex items-center space-x-1.5 ${
+                            isConnected
+                              ? 'bg-white hover:bg-gray-50 border border-border text-ink'
+                              : needsReconnect
+                              ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                        >
+                          {isConnecting ? (
+                            <span>Connecting…</span>
+                          ) : isConnected ? (
+                            <span>Re-authorize</span>
+                          ) : needsReconnect ? (
+                            <span>Reconnect Flipkart →</span>
+                          ) : (
+                            <span>Connect Flipkart →</span>
+                          )}
+                        </button>
+
+                        {isConnected && (
+                          <button
+                            onClick={() => handleDisconnectAccount(account.id)}
+                            disabled={isDisconnecting}
+                            className="h-8 px-2.5 text-xs font-semibold bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-lg transition-colors"
+                            title="Disconnect account"
+                          >
+                            {isDisconnecting ? '…' : 'Disconnect'}
+                          </button>
                         )}
-                      </button>
+                      </>
                     ) : (
                       <button
                         onClick={() => handleConnectAccount(account)}

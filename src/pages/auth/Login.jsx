@@ -41,9 +41,9 @@ export default function Login() {
         password: form.password,
       });
 
-      localStorage.setItem('orderly_token', token);
-      localStorage.setItem('orderly_company', JSON.stringify(company));
-      localStorage.setItem('orderly_user', JSON.stringify(user));
+      localStorage.setItem('ordernest_token', token);
+      localStorage.setItem('ordernest_company', JSON.stringify(company));
+      localStorage.setItem('ordernest_user', JSON.stringify(user));
 
       setUser(user);
       setCompany(company);
@@ -106,7 +106,7 @@ export default function Login() {
           </button>
 
           <p className="text-sm text-gray-500 text-center">
-            New to Orderly?{' '}
+            New to OrderNest?{' '}
             <Link to="/register" className="text-accent">
               Create an account
             </Link>
