@@ -18,3 +18,9 @@ export async function importOrdersCsv(formData) {
   });
   return data.data; // summary result
 }
+
+export async function getStateAnalytics(params = {}) {
+  const { data } = await apiClient.get('/orders/state-analytics', { params });
+  return data.data;
+}
+

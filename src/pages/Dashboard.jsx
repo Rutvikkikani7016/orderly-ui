@@ -4,6 +4,10 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { getProducts } from '../api/products.js';
 import { getPlatformAccounts } from '../api/platformAccounts.js';
 import { getOrders } from '../api/orders.js';
+import CustomDropdown from '../components/CustomDropdown.jsx';
+import DateRangeFilter from '../components/DateRangeFilter.jsx';
+
+
 
 export default function Dashboard() {
   const { user, company } = useAuth();
@@ -176,43 +180,34 @@ export default function Dashboard() {
         </div>
 
         {/* Date Filter Toolbar on Dashboard */}
-        <div className="flex items-center space-x-1.5 bg-gray-50 border border-border rounded-lg px-2.5 py-1">
+        <div className="flex items-center space-x-1.5">
           <span className="text-[11px] text-gray-500 font-medium">Period:</span>
-          <select
+          <CustomDropdown
             value={datePreset}
-            onChange={(e) => handleDatePresetChange(e.target.value)}
-            className="h-7 px-1.5 text-xs bg-transparent border-none text-ink font-semibold outline-none cursor-pointer"
-          >
-            <option value="today">Today</option>
-            <option value="7days">Last 7 Days</option>
-            <option value="30days">Last 30 Days</option>
-            <option value="thisMonth">This Month</option>
-            <option value="all">All Time</option>
-            <option value="custom">Custom Range</option>
-          </select>
+            onChange={(val) => handleDatePresetChange(val)}
+            options={[
+              { value: 'all', label: 'All Time' },
+              { value: 'today', label: 'Today' },
+              { value: '7days', label: 'Last 7 Days' },
+              { value: '30days', label: 'Last 30 Days' },
+              { value: 'thisMonth', label: 'This Month' },
+              { value: 'custom', label: 'Custom Range' },
+            ]}
+            size="sm"
+          />
         </div>
       </div>
 
       {/* Custom Date Pickers (if custom selected) */}
       {datePreset === 'custom' && (
-        <div className="bg-white border border-border rounded-xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex items-center space-x-2">
-            <span className="text-gray-500 font-medium">From:</span>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="h-8 px-2 bg-white border border-border rounded-md text-xs text-ink outline-none focus:border-accent"
-            />
-            <span className="text-gray-500 font-medium ml-2">To:</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="h-8 px-2 bg-white border border-border rounded-md text-xs text-ink outline-none focus:border-accent"
-            />
-          </div>
-        </div>
+        <DateRangeFilter
+          startDate={startDate}
+          endDate={endDate}
+          onStartDateChange={(val) => setStartDate(val)}
+          onEndDateChange={(val) => setEndDate(val)}
+          onClear={() => handleDatePresetChange('7days')}
+          showClear={true}
+        />
       )}
 
       {/* Overview Stat Cards */}

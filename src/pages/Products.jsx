@@ -6,6 +6,8 @@ import {
   updateProduct,
   deleteProduct,
 } from '../api/products.js';
+import CustomDropdown from '../components/CustomDropdown.jsx';
+
 
 export default function Products() {
   // State for products list and summary
@@ -27,6 +29,29 @@ export default function Products() {
   // Filters & Search
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const statusFilterOptions = [
+    { value: 'all', label: 'All Statuses' },
+    { value: 'active', label: 'Active', badge: 'Live' },
+    { value: 'draft', label: 'Draft' },
+    { value: 'archived', label: 'Archived' },
+  ];
+
+  const pageSizeOptions = [
+    { value: 5, label: '5 rows' },
+    { value: 10, label: '10 rows' },
+    { value: 15, label: '15 rows' },
+    { value: 20, label: '20 rows' },
+    { value: 25, label: '25 rows' },
+    { value: 50, label: '50 rows' },
+    { value: 100, label: '100 rows' },
+  ];
+
+  const statusFormOptions = [
+    { value: 'active', label: 'Active', badge: 'Live' },
+    { value: 'draft', label: 'Draft' },
+    { value: 'archived', label: 'Archived' },
+  ];
 
   // Modal State for Create / Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -277,16 +302,12 @@ export default function Products() {
               />
             </div>
 
-            <select
+            <CustomDropdown
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 px-3 text-xs bg-white border border-border text-ink rounded-md outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-            >
-              <option value="all">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="draft">Draft</option>
-              <option value="archived">Archived</option>
-            </select>
+              onChange={(val) => setStatusFilter(val)}
+              options={statusFilterOptions}
+              size="sm"
+            />
           </div>
         </div>
 
@@ -419,22 +440,15 @@ export default function Products() {
               </div>
               <div className="flex items-center space-x-1.5 border-l border-border pl-3">
                 <span className="text-gray-500">Rows per page:</span>
-                <select
+                <CustomDropdown
                   value={pagination.limit}
-                  onChange={(e) => {
-                    const newLimit = parseInt(e.target.value, 10);
+                  onChange={(val) => {
+                    const newLimit = parseInt(val, 10);
                     fetchCatalog(1, statusFilter, search, newLimit);
                   }}
-                  className="h-7 px-2 bg-white border border-border text-ink rounded font-medium outline-none focus:border-accent text-xs"
-                >
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={15}>15</option>
-                  <option value={20}>20</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
+                  options={pageSizeOptions}
+                  size="xs"
+                />
               </div>
             </div>
 
@@ -568,15 +582,14 @@ export default function Products() {
                 {/* Status */}
                 <div>
                   <label className="block font-medium text-ink mb-1">Status</label>
-                  <select
+                  <CustomDropdown
                     value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full h-9 px-3 bg-white border border-border rounded text-ink text-xs outline-none focus:border-accent"
-                  >
-                    <option value="active">Active</option>
-                    <option value="draft">Draft</option>
-                    <option value="archived">Archived</option>
-                  </select>
+                    onChange={(val) => setFormData({ ...formData, status: val })}
+                    options={statusFormOptions}
+                    size="sm"
+                    className="w-full"
+                    buttonClassName="w-full"
+                  />
                 </div>
               </div>
 
