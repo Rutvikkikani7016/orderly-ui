@@ -112,9 +112,9 @@ export default function Register() {
         password: form.password,
       });
 
-      localStorage.setItem('orderly_token', token);
-      localStorage.setItem('orderly_company', JSON.stringify(company));
-      localStorage.setItem('orderly_user', JSON.stringify(user));
+      localStorage.setItem('ordernest_token', token);
+      localStorage.setItem('ordernest_company', JSON.stringify(company));
+      localStorage.setItem('ordernest_user', JSON.stringify(user));
 
       setUser(user);
       setCompany(company);

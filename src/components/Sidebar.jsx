@@ -65,7 +65,7 @@ export default function Sidebar() {
       <div className="space-y-6">
         {/* Logo & Brand Header */}
         <div className="px-2 py-2">
-          <img src="/logo-full.png" alt="Orderly" className="h-10 object-contain" />
+          <img src="/logo-full.png" alt="OrderNest" className="h-10 object-contain" />
         </div>
 
         {/* Navigation Menu */}

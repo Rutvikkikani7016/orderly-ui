@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     async function verifyAuth() {
-      const token = localStorage.getItem('orderly_token');
+      const token = localStorage.getItem('ordernest_token') || localStorage.getItem('orderly_token');
       if (!token) {
         setIsAuthenticated(false);
         setUser(null);
@@ -32,14 +32,18 @@ export function AuthProvider({ children }) {
           setUser(data.user);
           setCompany(data.company);
           setIsAuthenticated(true);
-          localStorage.setItem('orderly_user', JSON.stringify(data.user));
+          localStorage.setItem('ordernest_token', token);
+          localStorage.setItem('ordernest_user', JSON.stringify(data.user));
           if (data.company) {
-            localStorage.setItem('orderly_company', JSON.stringify(data.company));
+            localStorage.setItem('ordernest_company', JSON.stringify(data.company));
           }
         } else {
           throw new Error('Invalid response payload');
         }
       } catch (error) {
+        localStorage.removeItem('ordernest_token');
+        localStorage.removeItem('ordernest_user');
+        localStorage.removeItem('ordernest_company');
         localStorage.removeItem('orderly_token');
         localStorage.removeItem('orderly_user');
         localStorage.removeItem('orderly_company');
@@ -55,6 +59,9 @@ export function AuthProvider({ children }) {
   }, []);
 
   function logout() {
+    localStorage.removeItem('ordernest_token');
+    localStorage.removeItem('ordernest_user');
+    localStorage.removeItem('ordernest_company');
     localStorage.removeItem('orderly_token');
     localStorage.removeItem('orderly_user');
     localStorage.removeItem('orderly_company');
