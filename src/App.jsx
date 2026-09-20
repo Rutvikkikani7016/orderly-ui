@@ -8,6 +8,11 @@ import Profile from './pages/Profile.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import PrivateRoute from './components/PrivateRoute.jsx';
 import AppLayout from './components/AppLayout.jsx';
+import SuperAdminRoute from './components/SuperAdminRoute.jsx';
+import SuperAdminLayout from './components/SuperAdminLayout.jsx';
+import SuperAdminOverview from './pages/superadmin/SuperAdminOverview.jsx';
+import SuperAdminCompanies from './pages/superadmin/SuperAdminCompanies.jsx';
+import SuperAdminUsers from './pages/superadmin/SuperAdminUsers.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 
 function PublicRoute({ children }) {
@@ -48,6 +53,20 @@ export default function App() {
           </PublicRoute>
         }
       />
+
+      {/* Super Admin Routes */}
+      <Route
+        path="/super-admin"
+        element={
+          <SuperAdminRoute>
+            <SuperAdminLayout />
+          </SuperAdminRoute>
+        }
+      >
+        <Route index element={<SuperAdminOverview />} />
+        <Route path="companies" element={<SuperAdminCompanies />} />
+        <Route path="users" element={<SuperAdminUsers />} />
+      </Route>
 
       {/* Protected Routes inside Sidebar AppLayout */}
       <Route
