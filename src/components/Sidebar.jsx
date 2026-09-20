@@ -70,6 +70,18 @@ export default function Sidebar() {
 
         {/* Navigation Menu */}
         <nav className="space-y-1">
+          {user?.role === 'super_admin' && (
+            <div className="mb-3">
+              <NavLink
+                to="/super-admin"
+                className="flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-bold bg-slate-900 text-indigo-300 hover:bg-slate-800 hover:text-white transition-all shadow-xs border border-indigo-500/30"
+              >
+                <span className="w-5 h-5 rounded-md bg-indigo-600 text-white flex items-center justify-center text-[10px]">⚡</span>
+                <span>Super Admin Portal</span>
+              </NavLink>
+            </div>
+          )}
+
           {navItems.map((item) => (
             <NavLink
               key={item.path}
