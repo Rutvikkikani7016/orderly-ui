@@ -162,7 +162,7 @@ export default function Dashboard() {
   const dailyAverage = dailyData.length > 0 ? (totalPeriodOrders / dailyData.length).toFixed(1) : '0';
 
   return (
-    <div className="p-4 md:p-5 font-sans space-y-3.5 max-w-full">
+    <div className="flex-1 overflow-y-auto p-4 md:p-5 font-sans space-y-3.5 max-w-full">
       {/* Welcome Banner */}
       <div className="bg-white border border-border rounded-xl p-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>

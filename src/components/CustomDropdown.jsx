@@ -15,9 +15,11 @@ export default function CustomDropdown({
   buttonClassName = '',
   menuClassName = '',
   disabled = false,
-  size = 'sm', // 'xs', 'sm', 'md'
+  size = 'sm', // '2xs', 'xs', 'sm', 'md', 'lg'
+  placement = 'auto', // 'auto', 'bottom', 'top'
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const containerRef = useRef(null);
 
   // Close when clicked outside
@@ -42,6 +44,25 @@ export default function CustomDropdown({
     };
   }, [isOpen]);
 
+  // Determine upward or downward placement when opened
+  useEffect(() => {
+    if (isOpen) {
+      if (placement === 'top') {
+        setOpenUpward(true);
+      } else if (placement === 'bottom') {
+        setOpenUpward(false);
+      } else if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        if (spaceBelow < 240 && rect.top > 200) {
+          setOpenUpward(true);
+        } else {
+          setOpenUpward(false);
+        }
+      }
+    }
+  }, [isOpen, placement]);
+
   // Normalize options: allow strings or objects { value, label, icon, badge }
   const normalizedOptions = options.map((opt) => {
     if (typeof opt === 'object' && opt !== null) {
@@ -55,10 +76,12 @@ export default function CustomDropdown({
   );
 
   const sizeClasses = {
-    xs: 'h-8 px-2.5 text-[11px] gap-1.5',
-    sm: 'h-9 px-3 text-xs gap-2',
-    md: 'h-10 px-3.5 text-sm gap-2.5',
-  }[size] || 'h-9 px-3 text-xs gap-2';
+    '2xs': 'h-6 px-2 text-[10.5px] gap-1',
+    xs: 'h-7 px-2 text-[11px] gap-1.5',
+    sm: 'h-8 px-2.5 text-xs gap-2',
+    md: 'h-9 px-3 text-xs gap-2',
+    lg: 'h-10 px-3.5 text-sm gap-2.5',
+  }[size] || 'h-8 px-2.5 text-xs gap-2';
 
   return (
     <div className={`relative inline-block text-left select-none ${className}`} ref={containerRef}>
@@ -113,8 +136,10 @@ export default function CustomDropdown({
       {/* Floating Menu */}
       {isOpen && (
         <div
-          className={`absolute z-50 mt-1 min-w-[170px] w-full max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl p-1 animate-in fade-in zoom-in-95 duration-100 focus:outline-none ${menuClassName}`}
-          style={{ boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08)' }}
+          className={`absolute z-50 min-w-[140px] max-h-60 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl p-1 animate-in fade-in zoom-in-95 duration-100 focus:outline-none ${
+            openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+          } ${menuClassName}`}
+          style={{ boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}
         >
           {normalizedOptions.map((opt) => {
             const isSelected = String(opt.value) === String(value);

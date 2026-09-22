@@ -4,7 +4,7 @@ export default function Profile() {
   const { user, company } = useAuth();
 
   return (
-    <div className="p-4 md:p-5 font-sans space-y-3.5 max-w-4xl">
+    <div className="flex-1 overflow-y-auto p-4 md:p-5 font-sans space-y-3.5 max-w-4xl">
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-ink tracking-tight">Seller Profile</h1>
