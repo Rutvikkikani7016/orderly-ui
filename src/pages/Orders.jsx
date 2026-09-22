@@ -6,8 +6,12 @@ import IndiaMapModal from '../components/IndiaMapModal.jsx';
 import CustomDropdown from '../components/CustomDropdown.jsx';
 import DateRangeFilter from '../components/DateRangeFilter.jsx';
 
-
-
+// Modular Order Components
+import OrderKpiCards from '../components/orders/OrderKpiCards.jsx';
+import PlatformPerformanceAccordion from '../components/orders/PlatformPerformanceAccordion.jsx';
+import OrdersTable from '../components/orders/OrdersTable.jsx';
+import ImportOrdersModal from '../components/orders/ImportOrdersModal.jsx';
+import OrderDetailsModal from '../components/orders/OrderDetailsModal.jsx';
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -29,13 +33,29 @@ export default function Orders() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Filters
+  // Filters with 1000ms (1s) Search Debouncer
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [platformFilter, setPlatformFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [datePreset, setDatePreset] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  // Platform performance breakdown collapsible toggle
+  const [showPlatformBreakdown, setShowPlatformBreakdown] = useState(false);
+
+  // Selected order for detailed modal view
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
+  // Debounce search input by 1000ms (1 second)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // Modal States
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -93,7 +113,7 @@ export default function Orders() {
     page = pagination.page,
     platform = platformFilter,
     status = statusFilter,
-    query = search,
+    query = debouncedSearch,
     start = startDate,
     end = endDate,
     pageLimit = pagination.limit
@@ -122,8 +142,8 @@ export default function Orders() {
   }
 
   useEffect(() => {
-    fetchOrders(1, platformFilter, statusFilter, search, startDate, endDate);
-  }, [platformFilter, statusFilter, search, startDate, endDate]);
+    fetchOrders(1, platformFilter, statusFilter, debouncedSearch, startDate, endDate);
+  }, [platformFilter, statusFilter, debouncedSearch, startDate, endDate]);
 
   function handleFileChange(e) {
     const file = e.target.files?.[0];
@@ -187,28 +207,6 @@ export default function Orders() {
     }
   }
 
-  function getStatusBadge(status) {
-    switch (status) {
-      case 'delivered':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'returned':
-      case 'rto_initiated':
-      case 'rto_delivered':
-        return 'bg-rose-50 text-rose-700 border-rose-200';
-      case 'cancelled':
-        return 'bg-red-50 text-red-700 border-red-200';
-      case 'exchanged':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
-      case 'shipped':
-      case 'out_for_delivery':
-      case 'packed':
-      case 'accepted':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
-      default:
-        return 'bg-amber-50 text-amber-700 border-amber-200';
-    }
-  }
-
   const allPlatformsConfig = [
     {
       id: 'flipkart',
@@ -216,9 +214,7 @@ export default function Orders() {
       bgColor: 'bg-blue-50',
       borderColor: 'border-blue-200',
       badgeColor: 'text-blue-700',
-      icon: (
-        <span className="font-extrabold text-[11px] text-[#2874F0]">FK</span>
-      ),
+      icon: <span className="font-extrabold text-[11px] text-[#2874F0]">FK</span>,
     },
     {
       id: 'meesho',
@@ -226,9 +222,7 @@ export default function Orders() {
       bgColor: 'bg-fuchsia-50',
       borderColor: 'border-fuchsia-200',
       badgeColor: 'text-fuchsia-700',
-      icon: (
-        <span className="font-extrabold text-[11px] text-[#9C27B0]">MS</span>
-      ),
+      icon: <span className="font-extrabold text-[11px] text-[#9C27B0]">MS</span>,
     },
     {
       id: 'amazon',
@@ -236,9 +230,7 @@ export default function Orders() {
       bgColor: 'bg-amber-50',
       borderColor: 'border-amber-200',
       badgeColor: 'text-amber-800',
-      icon: (
-        <span className="font-extrabold text-[11px] text-[#E67A00]">AZ</span>
-      ),
+      icon: <span className="font-extrabold text-[11px] text-[#E67A00]">AZ</span>,
     },
     {
       id: 'myntra',
@@ -246,9 +238,7 @@ export default function Orders() {
       bgColor: 'bg-rose-50',
       borderColor: 'border-rose-200',
       badgeColor: 'text-rose-700',
-      icon: (
-        <span className="font-extrabold text-[11px] text-[#FF3F6C]">MY</span>
-      ),
+      icon: <span className="font-extrabold text-[11px] text-[#FF3F6C]">MY</span>,
     },
   ];
 
@@ -307,25 +297,70 @@ export default function Orders() {
     { value: 100, label: '100 rows' },
   ];
 
-
   return (
-    <div className="p-4 md:p-5 font-sans space-y-3.5 max-w-full">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+    <div className="h-full flex flex-col p-3 md:p-3.5 font-sans space-y-2 max-w-full overflow-hidden">
+      {/* Compact Header */}
+      <div className="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold text-ink tracking-tight">Orders Management</h1>
-          <p className="text-[11px] text-gray-500">
-            Real-time unified order sync, platform performance analytics, and multi-channel imports
+          <h1 className="text-lg font-bold text-ink tracking-tight">Orders Management</h1>
+          <p className="text-[10.5px] text-gray-500">
+            Real-time multi-channel order sync (Flipkart, Meesho, Amazon), return analytics & CSV imports
           </p>
         </div>
 
         <div className="flex items-center space-x-2">
+          {/* Refresh Button */}
+          <button
+            onClick={async () => {
+              await fetchOrders(
+                pagination.page,
+                platformFilter,
+                statusFilter,
+                debouncedSearch,
+                startDate,
+                endDate,
+                pagination.limit
+              );
+              toast.success('Orders refreshed');
+            }}
+            disabled={loading}
+            className="h-7 px-2.5 text-[11px] font-semibold bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-ink hover:border-gray-400 rounded-md transition-all flex items-center space-x-1.5 shadow-2xs group cursor-pointer"
+            title="Refresh orders without reloading web page"
+          >
+            <svg
+              className={`w-3.5 h-3.5 text-gray-500 group-hover:text-ink ${
+                loading ? 'animate-spin text-accent' : 'group-hover:rotate-180 transition-transform duration-300'
+              }`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            <span>Refresh</span>
+          </button>
+
           <button
             onClick={() => setIsIndiaMapModalOpen(true)}
-            className="h-9 px-3.5 text-xs font-semibold bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-ink hover:border-gray-400 rounded-lg transition-all flex items-center space-x-2 shadow-2xs group"
+            className="h-7 px-2.5 text-[11px] font-semibold bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-ink hover:border-gray-400 rounded-md transition-all flex items-center space-x-1.5 shadow-2xs group"
           >
-            <svg className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            <svg
+              className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+              />
             </svg>
             <span>State Heatmap</span>
           </button>
@@ -335,9 +370,9 @@ export default function Orders() {
               setSelectedFile(null);
               setIsImportModalOpen(true);
             }}
-            className="h-9 px-4 text-xs font-semibold bg-ink text-white hover:bg-black rounded-lg transition-colors flex items-center space-x-2 shadow-xs"
+            className="h-7 px-3 text-[11px] font-semibold bg-ink text-white hover:bg-black rounded-md transition-colors flex items-center space-x-1 shadow-xs"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
             </svg>
             <span>Import Orders CSV</span>
@@ -345,238 +380,33 @@ export default function Orders() {
         </div>
       </div>
 
-      {/* Top High-Level Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white border border-border rounded-xl p-3.5 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Total Orders</p>
-            <h3 className="text-xl font-bold text-ink mt-0.5">{metrics.totalOrders}</h3>
-            <p className="text-[10px] text-gray-400 mt-0.5">₹{parseFloat(metrics.totalSales || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })} GMV</p>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-accent-light text-accent border border-accent/20 flex items-center justify-center">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
-          </div>
-        </div>
+      {/* Small Compact 4-KPI Cards */}
+      <OrderKpiCards
+        metrics={metrics}
+        totalReturnsAndCancelled={totalReturnsAndCancelled}
+        totalReturnAndCancelRate={totalReturnAndCancelRate}
+      />
 
-        <div className="bg-white border border-border rounded-xl p-3.5 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Delivered</p>
-            <h3 className="text-xl font-bold text-emerald-600 mt-0.5">{metrics.deliveredOrders}</h3>
-            <p className="text-[10px] text-emerald-600 font-medium mt-0.5">
-              {metrics.totalOrders > 0 ? `${((metrics.deliveredOrders / metrics.totalOrders) * 100).toFixed(0)}% fulfillment` : '0%'}
-            </p>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-        </div>
+      {/* Collapsible Platform-Wise Performance & Returns Accordion */}
+      <PlatformPerformanceAccordion
+        activePlatforms={activePlatforms}
+        platformMetricsList={platformMetricsList}
+        platformFilter={platformFilter}
+        setPlatformFilter={setPlatformFilter}
+        showPlatformBreakdown={showPlatformBreakdown}
+        setShowPlatformBreakdown={setShowPlatformBreakdown}
+      />
 
-        {/* Returns & Cancellations Combined Card */}
-        <div className="bg-white border border-border rounded-xl p-3.5 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Returns & Cancelled</p>
-            <div className="flex items-baseline space-x-1.5 mt-0.5">
-              <h3 className="text-xl font-bold text-rose-600">{totalReturnsAndCancelled}</h3>
-              <span className="text-[11px] text-rose-500 font-semibold">({totalReturnAndCancelRate}%)</span>
-            </div>
-            <p className="text-[10px] text-gray-500 mt-0.5 space-x-1">
-              <span className="text-rose-600 font-medium">{metrics.returnedOrders || 0} RTO</span>
-              <span>&bull;</span>
-              <span className="text-red-500 font-medium">{metrics.cancelledOrders || 0} Cancel</span>
-            </p>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-            </svg>
-          </div>
-        </div>
-
-        <div className="bg-white border border-border rounded-xl p-3.5 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Pending Dispatch</p>
-            <h3 className="text-xl font-bold text-amber-600 mt-0.5">{metrics.pendingDispatch}</h3>
-            <p className="text-[10px] text-amber-600 font-medium mt-0.5">Active pipeline</p>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      {/* Platform-Wise Performance Breakdown Section (ONLY for Selected Platforms) */}
-      {activePlatforms.length > 0 && (
-        <div className="bg-white border border-border rounded-xl p-3.5 shadow-xs space-y-2.5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-border pb-2.5">
-            <div>
-              <h3 className="text-xs font-bold text-ink flex items-center space-x-1.5">
-                <span>Platform-wise Performance & Returns</span>
-                <span className="text-[9px] bg-accent-light text-accent px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">
-                  Live Analytics
-                </span>
-              </h3>
-              <p className="text-[11px] text-gray-400">
-                Breakdown of orders, fulfillment, returns, and cancellations for your connected sales channels
-              </p>
-            </div>
-
-            <div className="flex items-center space-x-1">
-              <button
-                onClick={() => setPlatformFilter('all')}
-                className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${
-                  platformFilter === 'all'
-                    ? 'bg-ink text-white shadow-xs'
-                    : 'text-gray-500 hover:text-ink hover:bg-gray-100'
-                }`}
-              >
-                All Selected
-              </button>
-              {activePlatforms.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setPlatformFilter(p.id)}
-                  className={`px-2 py-1 text-xs rounded-md font-medium transition-all capitalize ${
-                    platformFilter === p.id
-                      ? 'bg-ink text-white shadow-xs'
-                      : 'text-gray-500 hover:text-ink hover:bg-gray-100'
-                  }`}
-                >
-                  {p.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Platform Cards Grid - Dynamically Sized for Selected Platforms Only */}
-          <div
-            className={`grid grid-cols-1 ${
-              activePlatforms.length === 1
-                ? 'max-w-md'
-                : activePlatforms.length === 2
-                ? 'md:grid-cols-2'
-                : activePlatforms.length === 3
-                ? 'md:grid-cols-3'
-                : 'md:grid-cols-2 lg:grid-cols-4'
-            } gap-3 pt-0.5`}
-          >
-            {activePlatforms.map((cfg) => {
-              const pStat = platformMetricsList.find((m) => m.platform === cfg.id) || {
-                totalOrders: 0,
-                totalSales: 0,
-                deliveredOrders: 0,
-                returnedOrders: 0,
-                cancelledOrders: 0,
-                pendingDispatch: 0,
-                fulfillmentRate: 0,
-                returnRate: 0,
-                cancelledRate: 0,
-              };
-
-              const isSelected = platformFilter === cfg.id;
-
-              return (
-                <div
-                  key={cfg.id}
-                  onClick={() => setPlatformFilter(isSelected ? 'all' : cfg.id)}
-                  className={`border rounded-lg p-3 cursor-pointer transition-all hover:shadow-xs ${
-                    isSelected
-                      ? 'border-accent ring-1.5 ring-accent/30 bg-accent/5'
-                      : 'border-border bg-white hover:border-gray-300'
-                  }`}
-                >
-                  {/* Platform Header */}
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-1.5">
-                      <div className={`w-6 h-6 rounded-md ${cfg.bgColor} border ${cfg.borderColor} flex items-center justify-center`}>
-                        {cfg.icon}
-                      </div>
-                      <span className="font-bold text-xs text-ink">{cfg.name}</span>
-                    </div>
-
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${cfg.bgColor} ${cfg.borderColor} ${cfg.badgeColor}`}>
-                      {pStat.totalOrders} {pStat.totalOrders === 1 ? 'order' : 'orders'}
-                    </span>
-                  </div>
-
-                  {/* Sales & Orders Stat */}
-                  <div className="space-y-1.5 mb-2">
-                    <div className="flex items-baseline justify-between text-[11px]">
-                      <span className="text-gray-500">Gross Sales</span>
-                      <span className="font-bold text-ink">
-                        ₹{parseFloat(pStat.totalSales || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                      </span>
-                    </div>
-
-                    {/* Fulfillment Progress Bar */}
-                    <div>
-                      <div className="flex items-center justify-between text-[10px] mb-0.5">
-                        <span className="text-gray-500">Fulfillment</span>
-                        <span className="font-semibold text-emerald-600">
-                          {pStat.deliveredOrders} ({pStat.fulfillmentRate}%)
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-100 h-1 rounded-full overflow-hidden">
-                        <div
-                          className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min(pStat.fulfillmentRate, 100)}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    {/* Return & Cancel Breakdown Bar */}
-                    <div>
-                      <div className="flex items-center justify-between text-[10px] mb-0.5">
-                        <span className="text-gray-500">Returns & Cancel</span>
-                        <span className="font-semibold text-rose-600">
-                          {(pStat.returnedOrders || 0) + (pStat.cancelledOrders || 0)} (
-                          {((pStat.returnRate || 0) + (pStat.cancelledRate || 0)).toFixed(1)}%)
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-100 h-1 rounded-full overflow-hidden flex">
-                        <div
-                          className="bg-rose-500 h-full transition-all duration-500"
-                          style={{ width: `${Math.min(pStat.returnRate, 100)}%` }}
-                          title={`Returns: ${pStat.returnRate}%`}
-                        ></div>
-                        <div
-                          className="bg-red-400 h-full transition-all duration-500"
-                          style={{ width: `${Math.min(pStat.cancelledRate, 100)}%` }}
-                          title={`Cancelled: ${pStat.cancelledRate}%`}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Footer Count Pills */}
-                  <div className="pt-2 border-t border-border/80 flex items-center justify-between text-[9px] text-gray-500">
-                    <span>Del: <strong className="text-ink">{pStat.deliveredOrders}</strong></span>
-                    <span>RTO: <strong className="text-rose-600">{pStat.returnedOrders}</strong></span>
-                    <span>Cancel: <strong className="text-red-500">{pStat.cancelledOrders || 0}</strong></span>
-                    <span>Pend: <strong className="text-amber-600">{pStat.pendingDispatch}</strong></span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Orders Table Container */}
-      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-xs space-y-0">
-        {/* Toolbar & Filter Controls */}
-        <div className="p-3.5 border-b border-border space-y-2.5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-            <div className="flex flex-wrap items-center gap-2.5">
-              {/* Search Box with explicit padding */}
-              <div className="relative min-w-[260px]">
+      {/* Orders Table Container (Fills remaining height, contains internal table scroll) */}
+      <div className="flex-1 min-h-0 flex flex-col bg-white border border-border rounded-lg overflow-hidden shadow-xs">
+        {/* Compact Search & Filter Toolbar (Fixed inside card top) */}
+        <div className="shrink-0 py-1.5 px-3 border-b border-border space-y-1.5 bg-gray-50/40">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2 flex-1 max-w-2xl">
+              {/* Search Box */}
+              <div className="relative flex-1 min-w-[220px]">
                 <svg
-                  className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -588,17 +418,18 @@ export default function Orders() {
                   placeholder="Search Order ID, Buyer, City, SKU…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full h-9 pr-3 text-xs bg-white border border-border text-ink rounded-md outline-none focus:border-accent focus:ring-1 focus:ring-accent placeholder-gray-400"
-                  style={{ paddingLeft: '2.2rem' }}
+                  className="!h-7 !min-h-0 w-full pr-2.5 text-[11px] bg-white border border-border text-ink rounded-md outline-none focus:border-accent focus:ring-1 focus:ring-accent placeholder-gray-400 !py-0 shadow-2xs"
+                  style={{ height: '28px', minHeight: '28px', paddingLeft: '2rem' }}
                 />
               </div>
 
-              {/* Channel Filter Dropdown (Filtered to Selected Platforms) */}
+              {/* Channel Filter Dropdown */}
               <CustomDropdown
                 value={platformFilter}
                 onChange={(val) => setPlatformFilter(val)}
                 options={channelOptions}
-                size="sm"
+                size="xs"
+                buttonClassName="!h-7 !min-h-0 !rounded-md"
               />
 
               {/* Status Filter Dropdown */}
@@ -606,7 +437,8 @@ export default function Orders() {
                 value={statusFilter}
                 onChange={(val) => setStatusFilter(val)}
                 options={statusOptions}
-                size="sm"
+                size="xs"
+                buttonClassName="!h-7 !min-h-0 !rounded-md"
               />
             </div>
 
@@ -617,14 +449,15 @@ export default function Orders() {
                 value={datePreset}
                 onChange={(val) => applyDatePreset(val)}
                 options={datePresetOptions}
-                size="sm"
+                size="xs"
+                buttonClassName="!h-7 !min-h-0 !rounded-md"
               />
             </div>
           </div>
 
           {/* Date Range Inputs (Visible when custom or date selected) */}
           {(datePreset === 'custom' || startDate || endDate) && (
-            <div className="pt-2 border-t border-dashed border-border">
+            <div className="pt-1.5 border-t border-dashed border-border">
               <DateRangeFilter
                 startDate={startDate}
                 endDate={endDate}
@@ -643,131 +476,18 @@ export default function Orders() {
           )}
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-ink">
-            <thead className="bg-gray-50/80 text-gray-500 uppercase text-[9px] font-semibold tracking-wider border-b border-border">
-              <tr>
-                <th className="px-3.5 py-2.5 text-center w-12">Sr. No</th>
-                <th className="px-4 py-2.5">Order ID & Date</th>
-                <th className="px-4 py-2.5">Channel</th>
-                <th className="px-4 py-2.5">Customer & Location</th>
-                <th className="px-4 py-2.5">Items / SKUs</th>
-                <th className="px-4 py-2.5">Tracking / Invoice</th>
-                <th className="px-4 py-2.5">Amount</th>
-                <th className="px-4 py-2.5">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {loading ? (
-                <tr>
-                  <td colSpan="8" className="px-4 py-6 text-center text-gray-500">
-                    Loading orders…
-                  </td>
-                </tr>
-              ) : orders.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
-                    <div className="w-10 h-10 rounded-full bg-gray-100 border border-border flex items-center justify-center mx-auto mb-2 text-gray-400">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                      </svg>
-                    </div>
-                    <p className="font-semibold text-ink text-xs mb-0.5">No matching orders found</p>
-                    <p className="text-gray-400 text-[11px] max-w-sm mx-auto mb-3">
-                      Try adjusting your date range or filters, or import a new CSV file.
-                    </p>
-                    <button
-                      onClick={() => setIsImportModalOpen(true)}
-                      className="px-4 py-2 text-xs font-semibold bg-ink text-white rounded-lg hover:bg-black transition-colors"
-                    >
-                      Import Orders CSV
-                    </button>
-                  </td>
-                </tr>
-              ) : (
-                orders.map((o, index) => (
-                  <tr key={o.id} className="hover:bg-gray-50/60 transition-colors">
-                    <td className="px-3.5 py-2.5 text-center text-[11px] font-mono font-medium text-gray-400">
-                      {(pagination.page - 1) * pagination.limit + index + 1}
-                    </td>
+        {/* Modular Table - In-Page Vertical & Horizontal Scrollable Container */}
+        <OrdersTable
+          orders={orders}
+          loading={loading}
+          pagination={pagination}
+          onOpenImportModal={() => setIsImportModalOpen(true)}
+          onViewOrder={(order) => setSelectedOrder(order)}
+        />
 
-                    <td className="px-4 py-2.5">
-                      <span className="font-mono text-ink font-semibold block text-[11px]">
-                        {o.platformOrderId}
-                      </span>
-                      <span className="text-[10px] text-gray-400">
-                        {o.orderDate ? new Date(o.orderDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-2.5">
-                      <span className="inline-block text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 capitalize">
-                        {o.platform}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-2.5">
-                      <span className="font-medium text-ink block text-xs">{o.buyerName || 'Customer'}</span>
-                      <span className="text-[10px] text-gray-400">
-                        {[o.buyerCity, o.buyerState].filter(Boolean).join(', ') || '—'}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-2.5 max-w-[220px]">
-                      {o.items && o.items.length > 0 ? (
-                        <div className="space-y-0.5">
-                          {o.items.map((it, idx) => (
-                            <div key={it.id || idx} className="flex items-center space-x-1 text-[11px]">
-                              <span className="font-mono bg-gray-100 text-ink px-1.5 py-0.5 rounded text-[10px] font-medium truncate max-w-[130px]">
-                                {it.platformSku}
-                              </span>
-                              <span className="text-gray-400 font-medium text-[10px]">&times; {it.quantity}</span>
-                              {it.productId && (
-                                <span className="text-[9px] text-emerald-600 font-bold" title="Linked to product catalog">✓</span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-
-                    <td className="px-4 py-2.5 text-[11px]">
-                      {o.trackingId ? (
-                        <span className="font-mono text-gray-600 block text-[10px]">{o.trackingId}</span>
-                      ) : (
-                        <span className="text-gray-400 block text-[10px]">—</span>
-                      )}
-                      {o.invoiceNo && (
-                        <span className="text-[9px] text-gray-400">Inv: {o.invoiceNo}</span>
-                      )}
-                    </td>
-
-                    <td className="px-4 py-2.5 font-bold text-ink">
-                      ₹{parseFloat(o.totalAmount || 0).toFixed(2)}
-                    </td>
-
-                    <td className="px-4 py-2.5">
-                      <span
-                        className={`inline-block text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border ${getStatusBadge(
-                          o.status
-                        )}`}
-                      >
-                        {o.status?.replace('_', ' ')}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
+        {/* Pagination (Fixed at bottom of Card) */}
         {pagination.total > 0 && (
-          <div className="p-3 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-[11px] text-gray-500 bg-gray-50/50">
+          <div className="shrink-0 relative z-20 p-2 px-3 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-gray-500 bg-gray-50/50">
             <div className="flex flex-wrap items-center gap-3">
               <div>
                 Showing page <span className="text-ink font-medium">{pagination.page}</span> of{' '}
@@ -779,10 +499,11 @@ export default function Orders() {
                   value={pagination.limit}
                   onChange={(val) => {
                     const newLimit = parseInt(val, 10);
-                    fetchOrders(1, platformFilter, statusFilter, search, startDate, endDate, newLimit);
+                    fetchOrders(1, platformFilter, statusFilter, debouncedSearch, startDate, endDate, newLimit);
                   }}
                   options={pageSizeOptions}
                   size="xs"
+                  placement="top"
                 />
               </div>
             </div>
@@ -794,14 +515,14 @@ export default function Orders() {
                     pagination.page - 1,
                     platformFilter,
                     statusFilter,
-                    search,
+                    debouncedSearch,
                     startDate,
                     endDate,
                     pagination.limit
                   )
                 }
                 disabled={pagination.page <= 1}
-                className="px-3 py-1.5 bg-white hover:bg-gray-50 disabled:opacity-40 text-ink rounded border border-border shadow-xs font-medium text-xs"
+                className="px-3 py-1.5 bg-white hover:bg-gray-50 disabled:opacity-40 text-ink rounded border border-border shadow-xs font-medium text-xs cursor-pointer"
               >
                 &larr; Previous
               </button>
@@ -811,14 +532,14 @@ export default function Orders() {
                     pagination.page + 1,
                     platformFilter,
                     statusFilter,
-                    search,
+                    debouncedSearch,
                     startDate,
                     endDate,
                     pagination.limit
                   )
                 }
                 disabled={pagination.page >= pagination.totalPages}
-                className="px-3 py-1.5 bg-white hover:bg-gray-50 disabled:opacity-40 text-ink rounded border border-border shadow-xs font-medium text-xs"
+                className="px-3 py-1.5 bg-white hover:bg-gray-50 disabled:opacity-40 text-ink rounded border border-border shadow-xs font-medium text-xs cursor-pointer"
               >
                 Next &rarr;
               </button>
@@ -827,114 +548,27 @@ export default function Orders() {
         )}
       </div>
 
-      {/* Import Orders Modal */}
-      {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white border border-border rounded-xl max-w-lg w-full p-5 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div>
-                <h3 className="text-base font-bold text-ink">Import Orders CSV</h3>
-                <p className="text-xs text-gray-500">Upload exported sales orders from your connected channels</p>
-              </div>
-              <button
-                onClick={() => setIsImportModalOpen(false)}
-                className="text-gray-400 hover:text-ink text-lg font-bold"
-              >
-                &times;
-              </button>
-            </div>
+      {/* Modular Import Orders Modal */}
+      <ImportOrdersModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSubmit={handleImportSubmit}
+        importPlatform={importPlatform}
+        setImportPlatform={setImportPlatform}
+        activePlatforms={activePlatforms}
+        fileInputRef={fileInputRef}
+        handleFileChange={handleFileChange}
+        selectedFile={selectedFile}
+        detectedPlatform={detectedPlatform}
+        importing={importing}
+      />
 
-            <form onSubmit={handleImportSubmit} className="space-y-3.5 text-xs">
-              {/* Channel Selector - Only connected platforms */}
-              <div>
-                <label className="block font-medium text-ink mb-1">Sales Channel</label>
-                <select
-                  value={importPlatform}
-                  onChange={(e) => setImportPlatform(e.target.value)}
-                  className="w-full h-9 px-3 bg-white border border-border rounded-md text-ink text-xs outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-                >
-                  <option value="auto">✨ Auto-detect Platform (Recommended)</option>
-                  {activePlatforms.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} Seller Portal (CSV)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Drag & Drop File Box */}
-              <div>
-                <label className="block font-medium text-ink mb-1">Select Order CSV File *</label>
-                <input
-                  type="file"
-                  accept=".csv"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-border hover:border-accent rounded-xl p-5 text-center cursor-pointer bg-surface/50 transition-colors"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-accent-light text-accent border border-accent/20 flex items-center justify-center mx-auto mb-1.5">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                  </div>
-
-                  {selectedFile ? (
-                    <div className="space-y-0.5">
-                      <p className="font-semibold text-ink text-xs">{selectedFile.name}</p>
-                      <p className="text-[10px] text-gray-500">
-                        {(selectedFile.size / 1024).toFixed(1)} KB &bull; Click to change
-                      </p>
-                      {detectedPlatform && (
-                        <div className="pt-0.5">
-                          <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            ✨ Detected: {detectedPlatform} Orders Export
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="font-medium text-ink text-xs">
-                        Click or drag & drop your order CSV file here
-                      </p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">Supports standard CSV exports from connected channels</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-2.5 bg-blue-50/70 border border-blue-100 rounded-lg text-[10px] text-blue-900 leading-relaxed">
-                💡 <strong>Auto-Detection Active:</strong> You can leave the platform on <em>Auto-detect</em>. Our system inspects the column headers and routes to your connected channel accordingly.
-              </div>
-
-              <div className="pt-2.5 border-t border-border flex items-center justify-end space-x-2.5">
-                <button
-                  type="button"
-                  onClick={() => setIsImportModalOpen(false)}
-                  className="px-3.5 py-1.5 bg-white hover:bg-gray-50 border border-border text-ink rounded-md transition-colors font-medium text-xs"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={!selectedFile || importing}
-                  className="px-4 py-2 bg-ink text-white hover:bg-black font-semibold rounded-md transition-colors disabled:opacity-50 flex items-center space-x-1.5 text-xs"
-                >
-                  {importing && (
-                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  )}
-                  <span>{importing ? 'Processing Orders…' : 'Import Orders'}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Modular Order Details Modal */}
+      <OrderDetailsModal
+        order={selectedOrder}
+        isOpen={Boolean(selectedOrder)}
+        onClose={() => setSelectedOrder(null)}
+      />
 
       {/* India State-wise Heatmap Modal */}
       <IndiaMapModal
@@ -944,4 +578,3 @@ export default function Orders() {
     </div>
   );
 }
-

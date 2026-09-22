@@ -24,3 +24,12 @@ export async function deleteProduct(id) {
   const { data } = await apiClient.delete(`/products/${id}`);
   return data.data;
 }
+
+export async function importCatalogSpreadsheet(formData) {
+  const { data } = await apiClient.post('/products/import-catalog', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return data.data;
+}

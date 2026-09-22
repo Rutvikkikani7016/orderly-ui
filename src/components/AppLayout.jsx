@@ -5,7 +5,7 @@ export default function AppLayout() {
   return (
     <div className="flex h-screen overflow-hidden bg-surface">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto h-screen">
+      <main className="flex-1 h-screen overflow-hidden flex flex-col">
         <Outlet />
       </main>
     </div>
