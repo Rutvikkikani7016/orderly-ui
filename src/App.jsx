@@ -13,6 +13,10 @@ import SuperAdminLayout from './components/SuperAdminLayout.jsx';
 import SuperAdminOverview from './pages/superadmin/SuperAdminOverview.jsx';
 import SuperAdminCompanies from './pages/superadmin/SuperAdminCompanies.jsx';
 import SuperAdminUsers from './pages/superadmin/SuperAdminUsers.jsx';
+import Manufacturing from './pages/Manufacturing.jsx';
+import RawMaterials from './pages/RawMaterials.jsx';
+import SupplierMaster from './pages/SupplierMaster.jsx';
+import CategoryUnitMaster from './pages/CategoryUnitMaster.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 
 function PublicRoute({ children }) {
@@ -79,6 +83,11 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/products" element={<Products />} />
+        <Route path="/masters/products" element={<Products />} />
+        <Route path="/masters/suppliers" element={<SupplierMaster />} />
+        <Route path="/masters/categories-units" element={<CategoryUnitMaster />} />
+        <Route path="/manufacturing" element={<Manufacturing />} />
+        <Route path="/raw-materials" element={<RawMaterials />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/profile" element={<Profile />} />
       </Route>
