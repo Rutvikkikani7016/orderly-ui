@@ -10,6 +10,7 @@ import {
   updateUnitOfMeasure,
   deleteUnitOfMeasure,
 } from '../api/manufacturing.js';
+import { DataTable, TableToolbar, SearchBar, TableIconButton } from '../components/common/index.js';
 
 export default function CategoryUnitMaster() {
   const [activeTab, setActiveTab] = useState('categories'); // 'categories' | 'units'
@@ -17,6 +18,9 @@ export default function CategoryUnitMaster() {
   // Categories state
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  const [catSearch, setCatSearch] = useState('');
+  const [catPage, setCatPage] = useState(1);
+  const [catLimit, setCatLimit] = useState(15);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [categoryFormData, setCategoryFormData] = useState({
@@ -29,6 +33,9 @@ export default function CategoryUnitMaster() {
   // Units state
   const [units, setUnits] = useState([]);
   const [loadingUnits, setLoadingUnits] = useState(false);
+  const [unitSearch, setUnitSearch] = useState('');
+  const [unitPage, setUnitPage] = useState(1);
+  const [unitLimit, setUnitLimit] = useState(15);
   const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState(null);
   const [unitFormData, setUnitFormData] = useState({
@@ -167,6 +174,168 @@ export default function CategoryUnitMaster() {
     }
   }
 
+  // Filtered & Paginated Categories
+  const filteredCategories = categories.filter((c) => {
+    if (!catSearch) return true;
+    const q = catSearch.toLowerCase();
+    return (
+      c.name?.toLowerCase().includes(q) ||
+      c.code?.toLowerCase().includes(q) ||
+      c.description?.toLowerCase().includes(q)
+    );
+  });
+  const totalCategories = filteredCategories.length;
+  const totalCatPages = Math.max(1, Math.ceil(totalCategories / catLimit));
+  const safeCatPage = Math.min(catPage, totalCatPages);
+  const paginatedCategories = filteredCategories.slice((safeCatPage - 1) * catLimit, safeCatPage * catLimit);
+
+  // Filtered & Paginated Units
+  const filteredUnits = units.filter((u) => {
+    if (!unitSearch) return true;
+    const q = unitSearch.toLowerCase();
+    return (
+      u.name?.toLowerCase().includes(q) ||
+      u.symbol?.toLowerCase().includes(q) ||
+      u.description?.toLowerCase().includes(q)
+    );
+  });
+  const totalUnits = filteredUnits.length;
+  const totalUnitPages = Math.max(1, Math.ceil(totalUnits / unitLimit));
+  const safeUnitPage = Math.min(unitPage, totalUnitPages);
+  const paginatedUnits = filteredUnits.slice((safeUnitPage - 1) * unitLimit, safeUnitPage * unitLimit);
+
+  // Standardized Category Columns
+  const categoryColumns = [
+    {
+      key: 'index',
+      header: '#',
+      align: 'center',
+      width: '40px',
+      render: (_, idx, pageNum, pageSize) => (
+        <span className="font-mono text-gray-400 text-[10.5px]">
+          {(pageNum - 1) * pageSize + idx + 1}
+        </span>
+      ),
+    },
+    {
+      key: 'code',
+      header: 'Code',
+      minWidth: '100px',
+      render: (c) => <span className="font-mono font-bold text-xs text-ink">{c.code || '—'}</span>,
+    },
+    {
+      key: 'name',
+      header: 'Category Name',
+      minWidth: '200px',
+      render: (c) => <span className="font-semibold text-ink text-xs">{c.name}</span>,
+    },
+    {
+      key: 'description',
+      header: 'Description',
+      minWidth: '250px',
+      render: (c) => <span className="text-gray-500 text-[11px]">{c.description || '—'}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      align: 'center',
+      minWidth: '90px',
+      render: (c) => (
+        <span className="inline-block text-[8.5px] uppercase font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+          {c.status || 'Active'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      width: '80px',
+      render: (c) => (
+        <div className="flex items-center justify-end space-x-1">
+          <TableIconButton
+            variant="edit"
+            onClick={() => handleOpenEditCategory(c)}
+            title="Edit Category"
+          />
+          <TableIconButton
+            variant="delete"
+            onClick={() => handleDeleteCategory(c.id)}
+            title="Delete Category"
+          />
+        </div>
+      ),
+    },
+  ];
+
+  // Standardized Unit Columns
+  const unitColumns = [
+    {
+      key: 'index',
+      header: '#',
+      align: 'center',
+      width: '40px',
+      render: (_, idx, pageNum, pageSize) => (
+        <span className="font-mono text-gray-400 text-[10.5px]">
+          {(pageNum - 1) * pageSize + idx + 1}
+        </span>
+      ),
+    },
+    {
+      key: 'symbol',
+      header: 'Symbol / Code',
+      minWidth: '120px',
+      render: (u) => (
+        <span className="font-mono font-bold text-xs bg-gray-100 text-ink px-1.5 py-0.5 rounded border border-gray-200">
+          {u.symbol}
+        </span>
+      ),
+    },
+    {
+      key: 'name',
+      header: 'Unit Name',
+      minWidth: '180px',
+      render: (u) => <span className="font-semibold text-ink text-xs">{u.name}</span>,
+    },
+    {
+      key: 'description',
+      header: 'Description / Usage',
+      minWidth: '250px',
+      render: (u) => <span className="text-gray-500 text-[11px]">{u.description || '—'}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      align: 'center',
+      minWidth: '90px',
+      render: (u) => (
+        <span className="inline-block text-[8.5px] uppercase font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+          {u.status || 'Active'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      width: '80px',
+      render: (u) => (
+        <div className="flex items-center justify-end space-x-1">
+          <TableIconButton
+            variant="edit"
+            onClick={() => handleOpenEditUnit(u)}
+            title="Edit Unit"
+          />
+          <TableIconButton
+            variant="delete"
+            onClick={() => handleDeleteUnit(u.id)}
+            title="Delete Unit"
+          />
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="h-full flex flex-col p-3 md:p-3.5 font-sans space-y-2 max-w-full overflow-hidden">
       {/* Top Header */}
@@ -243,152 +412,96 @@ export default function CategoryUnitMaster() {
         </div>
       </div>
 
-      {/* Main Table Card */}
-      <div className="flex-1 min-h-0 flex flex-col bg-white border border-border rounded-lg overflow-hidden shadow-xs">
-        {/* Categories Tab */}
-        {activeTab === 'categories' && (
-          <div className="flex-1 min-h-0 overflow-auto w-full">
-            <table className="w-full min-w-[750px] text-left text-xs text-ink">
-              <thead className="sticky top-0 z-10 bg-gray-50 text-gray-500 uppercase text-[9px] font-bold tracking-wider border-b border-border shadow-2xs">
-                <tr>
-                  <th className="px-2.5 py-2 text-center w-10 bg-gray-50">#</th>
-                  <th className="px-3 py-2 min-w-[100px] bg-gray-50">Code</th>
-                  <th className="px-3 py-2 min-w-[200px] bg-gray-50">Category Name</th>
-                  <th className="px-3 py-2 min-w-[250px] bg-gray-50">Description</th>
-                  <th className="px-3 py-2 text-center min-w-[90px] bg-gray-50">Status</th>
-                  <th className="px-3 py-2 text-right w-24 bg-gray-50">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {loadingCategories ? (
-                  <tr>
-                    <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
-                      <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                      <span className="text-xs">Loading categories…</span>
-                    </td>
-                  </tr>
-                ) : categories.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
-                      <p className="font-semibold text-ink text-xs mb-0.5">No material categories found</p>
-                      <button
-                        onClick={handleOpenAddCategory}
-                        className="px-3 py-1.5 text-xs font-semibold bg-ink text-white rounded-md mt-2"
-                      >
-                        + Add First Category
-                      </button>
-                    </td>
-                  </tr>
-                ) : (
-                  categories.map((c, idx) => (
-                    <tr key={c.id} className="hover:bg-blue-50/20 transition-colors">
-                      <td className="px-2.5 py-2 text-center text-[10.5px] font-mono text-gray-400">{idx + 1}</td>
-                      <td className="px-3 py-2 font-mono font-bold text-xs text-ink">{c.code || '—'}</td>
-                      <td className="px-3 py-2 font-semibold text-ink text-xs">{c.name}</td>
-                      <td className="px-3 py-2 text-gray-500 text-[11px]">{c.description || '—'}</td>
-                      <td className="px-3 py-2 text-center">
-                        <span className="inline-block text-[8.5px] uppercase font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          {c.status || 'Active'}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-right space-x-1">
-                        <button
-                          onClick={() => handleOpenEditCategory(c)}
-                          className="px-1.5 py-0.5 text-[10.5px] bg-gray-100 hover:bg-gray-200 text-ink rounded font-medium"
-                          title="Edit"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCategory(c.id)}
-                          className="px-1.5 py-0.5 text-[10.5px] bg-rose-50 hover:bg-rose-100 text-rose-600 rounded font-medium"
-                          title="Delete"
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Units Tab */}
-        {activeTab === 'units' && (
-          <div className="flex-1 min-h-0 overflow-auto w-full">
-            <table className="w-full min-w-[750px] text-left text-xs text-ink">
-              <thead className="sticky top-0 z-10 bg-gray-50 text-gray-500 uppercase text-[9px] font-bold tracking-wider border-b border-border shadow-2xs">
-                <tr>
-                  <th className="px-2.5 py-2 text-center w-10 bg-gray-50">#</th>
-                  <th className="px-3 py-2 min-w-[120px] bg-gray-50">Symbol / Code</th>
-                  <th className="px-3 py-2 min-w-[180px] bg-gray-50">Unit Name</th>
-                  <th className="px-3 py-2 min-w-[250px] bg-gray-50">Description / Usage</th>
-                  <th className="px-3 py-2 text-center min-w-[90px] bg-gray-50">Status</th>
-                  <th className="px-3 py-2 text-right w-24 bg-gray-50">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {loadingUnits ? (
-                  <tr>
-                    <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
-                      <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                      <span className="text-xs">Loading units…</span>
-                    </td>
-                  </tr>
-                ) : units.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
-                      <p className="font-semibold text-ink text-xs mb-0.5">No units of measure found</p>
-                      <button
-                        onClick={handleOpenAddUnit}
-                        className="px-3 py-1.5 text-xs font-semibold bg-ink text-white rounded-md mt-2"
-                      >
-                        + Add First Unit
-                      </button>
-                    </td>
-                  </tr>
-                ) : (
-                  units.map((u, idx) => (
-                    <tr key={u.id} className="hover:bg-blue-50/20 transition-colors">
-                      <td className="px-2.5 py-2 text-center text-[10.5px] font-mono text-gray-400">{idx + 1}</td>
-                      <td className="px-3 py-2">
-                        <span className="font-mono font-bold text-xs bg-gray-100 text-ink px-1.5 py-0.5 rounded border border-gray-200">
-                          {u.symbol}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 font-semibold text-ink text-xs">{u.name}</td>
-                      <td className="px-3 py-2 text-gray-500 text-[11px]">{u.description || '—'}</td>
-                      <td className="px-3 py-2 text-center">
-                        <span className="inline-block text-[8.5px] uppercase font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          {u.status || 'Active'}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-right space-x-1">
-                        <button
-                          onClick={() => handleOpenEditUnit(u)}
-                          className="px-1.5 py-0.5 text-[10.5px] bg-gray-100 hover:bg-gray-200 text-ink rounded font-medium"
-                          title="Edit"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUnit(u.id)}
-                          className="px-1.5 py-0.5 text-[10.5px] bg-rose-50 hover:bg-rose-100 text-rose-600 rounded font-medium"
-                          title="Delete"
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Main Table Card via Reusable DataTable */}
+      {activeTab === 'categories' ? (
+        <DataTable
+          columns={categoryColumns}
+          data={paginatedCategories}
+          loading={loadingCategories}
+          minWidth="750px"
+          toolbar={
+            <TableToolbar>
+              <SearchBar
+                value={catSearch}
+                onChange={(val) => {
+                  setCatSearch(val);
+                  setCatPage(1);
+                }}
+                placeholder="Search material categories by name, code..."
+              />
+            </TableToolbar>
+          }
+          emptyState={{
+            icon: '🏷️',
+            title: 'No material categories found',
+            description: 'Add your textile categories (fabric, rib, thread, trim) to organize production.',
+            actionButton: (
+              <button
+                onClick={handleOpenAddCategory}
+                className="px-3 py-1.5 text-xs font-semibold bg-ink text-white rounded-md mt-2 hover:bg-black"
+              >
+                + Add First Category
+              </button>
+            ),
+          }}
+          pagination={{
+            page: safeCatPage,
+            limit: catLimit,
+            total: totalCategories,
+            totalPages: totalCatPages,
+            onPageChange: setCatPage,
+            onLimitChange: (newLimit) => {
+              setCatLimit(newLimit);
+              setCatPage(1);
+            },
+            itemName: 'categories',
+          }}
+        />
+      ) : (
+        <DataTable
+          columns={unitColumns}
+          data={paginatedUnits}
+          loading={loadingUnits}
+          minWidth="750px"
+          toolbar={
+            <TableToolbar>
+              <SearchBar
+                value={unitSearch}
+                onChange={(val) => {
+                  setUnitSearch(val);
+                  setUnitPage(1);
+                }}
+                placeholder="Search units of measure by name, symbol..."
+              />
+            </TableToolbar>
+          }
+          emptyState={{
+            icon: '📏',
+            title: 'No units of measure found',
+            description: 'Add standard units of measure (meter, kg, piece, spool) for inventory.',
+            actionButton: (
+              <button
+                onClick={handleOpenAddUnit}
+                className="px-3 py-1.5 text-xs font-semibold bg-ink text-white rounded-md mt-2 hover:bg-black"
+              >
+                + Add First Unit
+              </button>
+            ),
+          }}
+          pagination={{
+            page: safeUnitPage,
+            limit: unitLimit,
+            total: totalUnits,
+            totalPages: totalUnitPages,
+            onPageChange: setUnitPage,
+            onLimitChange: (newLimit) => {
+              setUnitLimit(newLimit);
+              setUnitPage(1);
+            },
+            itemName: 'units',
+          }}
+        />
+      )}
 
       {/* Add / Edit Category Modal */}
       {isCategoryModalOpen && (
