@@ -12,6 +12,7 @@ import PlatformPerformanceAccordion from '../components/orders/PlatformPerforman
 import OrdersTable from '../components/orders/OrdersTable.jsx';
 import ImportOrdersModal from '../components/orders/ImportOrdersModal.jsx';
 import OrderDetailsModal from '../components/orders/OrderDetailsModal.jsx';
+import { SearchBar, TablePagination } from '../components/common';
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -403,25 +404,13 @@ export default function Orders() {
         <div className="shrink-0 py-1.5 px-3 border-b border-border space-y-1.5 bg-gray-50/40">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2 flex-1 max-w-2xl">
-              {/* Search Box */}
-              <div className="relative flex-1 min-w-[220px]">
-                <svg
-                  className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Search Order ID, Buyer, City, SKU…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="!h-7 !min-h-0 w-full pr-2.5 text-[11px] bg-white border border-border text-ink rounded-md outline-none focus:border-accent focus:ring-1 focus:ring-accent placeholder-gray-400 !py-0 shadow-2xs"
-                  style={{ height: '28px', minHeight: '28px', paddingLeft: '2rem' }}
-                />
-              </div>
+              {/* Standardized Search Box */}
+              <SearchBar
+                value={search}
+                onChange={setSearch}
+                placeholder="Search Order ID, Buyer, City, SKU…"
+                width="flex-1 min-w-[220px]"
+              />
 
               {/* Channel Filter Dropdown */}
               <CustomDropdown
@@ -485,66 +474,37 @@ export default function Orders() {
           onViewOrder={(order) => setSelectedOrder(order)}
         />
 
-        {/* Pagination (Fixed at bottom of Card) */}
+        {/* Standardized Dense Bottom Pagination */}
         {pagination.total > 0 && (
-          <div className="shrink-0 relative z-20 p-2 px-3 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-gray-500 bg-gray-50/50">
-            <div className="flex flex-wrap items-center gap-3">
-              <div>
-                Showing page <span className="text-ink font-medium">{pagination.page}</span> of{' '}
-                <span className="text-ink font-medium">{pagination.totalPages}</span> ({pagination.total} total orders)
-              </div>
-              <div className="flex items-center space-x-1.5 border-l border-border pl-3">
-                <span className="text-gray-500">Rows per page:</span>
-                <CustomDropdown
-                  value={pagination.limit}
-                  onChange={(val) => {
-                    const newLimit = parseInt(val, 10);
-                    fetchOrders(1, platformFilter, statusFilter, debouncedSearch, startDate, endDate, newLimit);
-                  }}
-                  options={pageSizeOptions}
-                  size="xs"
-                  placement="top"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-1.5">
-              <button
-                onClick={() =>
-                  fetchOrders(
-                    pagination.page - 1,
-                    platformFilter,
-                    statusFilter,
-                    debouncedSearch,
-                    startDate,
-                    endDate,
-                    pagination.limit
-                  )
-                }
-                disabled={pagination.page <= 1}
-                className="px-3 py-1.5 bg-white hover:bg-gray-50 disabled:opacity-40 text-ink rounded border border-border shadow-xs font-medium text-xs cursor-pointer"
-              >
-                &larr; Previous
-              </button>
-              <button
-                onClick={() =>
-                  fetchOrders(
-                    pagination.page + 1,
-                    platformFilter,
-                    statusFilter,
-                    debouncedSearch,
-                    startDate,
-                    endDate,
-                    pagination.limit
-                  )
-                }
-                disabled={pagination.page >= pagination.totalPages}
-                className="px-3 py-1.5 bg-white hover:bg-gray-50 disabled:opacity-40 text-ink rounded border border-border shadow-xs font-medium text-xs cursor-pointer"
-              >
-                Next &rarr;
-              </button>
-            </div>
-          </div>
+          <TablePagination
+            page={pagination.page}
+            limit={pagination.limit}
+            total={pagination.total}
+            totalPages={pagination.totalPages}
+            onPageChange={(newPage) =>
+              fetchOrders(
+                newPage,
+                platformFilter,
+                statusFilter,
+                debouncedSearch,
+                startDate,
+                endDate,
+                pagination.limit
+              )
+            }
+            onLimitChange={(newLimit) => {
+              fetchOrders(
+                1,
+                platformFilter,
+                statusFilter,
+                debouncedSearch,
+                startDate,
+                endDate,
+                newLimit
+              );
+            }}
+            itemName="orders"
+          />
         )}
       </div>
 

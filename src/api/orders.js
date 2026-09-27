@@ -24,3 +24,28 @@ export async function getStateAnalytics(params = {}) {
   return data.data;
 }
 
+export async function transitionOrderStatus(id, payload) {
+  const { data } = await apiClient.post(`/orders/${id}/transition`, payload);
+  return data.data;
+}
+
+export async function holdOrder(id, payload) {
+  const { data } = await apiClient.post(`/orders/${id}/hold`, payload);
+  return data.data;
+}
+
+export async function releaseHold(id, payload = {}) {
+  const { data } = await apiClient.post(`/orders/${id}/release`, payload);
+  return data.data;
+}
+
+export async function cancelOrder(id, payload) {
+  const { data } = await apiClient.post(`/orders/${id}/cancel`, payload);
+  return data.data;
+}
+
+export async function getOrderTimeline(id) {
+  const { data } = await apiClient.get(`/orders/${id}/timeline`);
+  return data.data;
+}
+

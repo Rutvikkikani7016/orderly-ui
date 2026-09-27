@@ -12,6 +12,7 @@ import {
   getUnitsOfMeasure,
 } from '../api/manufacturing.js';
 import CustomDropdown from '../components/CustomDropdown.jsx';
+import { DataTable, TableToolbar, SearchBar, TableIconButton } from '../components/common/index.js';
 
 export default function RawMaterials() {
   const [items, setItems] = useState([]);
@@ -30,12 +31,21 @@ export default function RawMaterials() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
 
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(15);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
+      setPage(1);
     }, 1000);
     return () => clearTimeout(timer);
   }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [categoryFilter]);
 
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -246,6 +256,111 @@ export default function RawMaterials() {
     }
   }
 
+  const totalItems = items.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+  const safePage = Math.min(page, totalPages);
+  const paginatedItems = items.slice((safePage - 1) * limit, safePage * limit);
+
+  // Standardized Material Columns
+  const materialColumns = [
+    {
+      key: 'index',
+      header: '#',
+      align: 'center',
+      width: '40px',
+      render: (_, idx, pageNum, pageSize) => (
+        <span className="font-mono text-gray-400 text-[10.5px]">
+          {(pageNum - 1) * pageSize + idx + 1}
+        </span>
+      ),
+    },
+    {
+      key: 'code',
+      header: 'Code',
+      minWidth: '130px',
+      render: (it) => <span className="font-mono text-ink font-semibold text-[11px]">{it.code}</span>,
+    },
+    {
+      key: 'name',
+      header: 'Raw Material Name',
+      minWidth: '220px',
+      render: (it) => <span className="font-medium text-ink text-[11.5px]">{it.name}</span>,
+    },
+    {
+      key: 'category',
+      header: 'Category',
+      minWidth: '120px',
+      render: (it) => (
+        <span className="inline-block text-[9px] uppercase font-bold px-1.5 py-0.2 rounded bg-gray-100 text-gray-700 capitalize">
+          {it.category}
+        </span>
+      ),
+    },
+    {
+      key: 'currentStock',
+      header: 'Current Stock',
+      minWidth: '120px',
+      render: (it) => {
+        const stockNum = parseFloat(it.currentStock || 0);
+        const minStock = parseFloat(it.minAlertStock || 0);
+        const isLow = stockNum <= minStock;
+        return (
+          <div className="flex items-center space-x-1.5">
+            <span className={`font-bold font-mono text-xs ${isLow ? 'text-rose-600' : 'text-emerald-700'}`}>
+              {stockNum.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+            </span>
+            {isLow && (
+              <span className="text-[8.5px] bg-rose-50 text-rose-700 border border-rose-200 px-1 py-0.2 rounded font-bold">
+                Low
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'unitOfMeasure',
+      header: 'UOM',
+      minWidth: '100px',
+      render: (it) => <span className="text-[10.5px] text-gray-600 font-medium capitalize">{it.unitOfMeasure}</span>,
+    },
+    {
+      key: 'avgRate',
+      header: 'Avg Rate / Unit',
+      minWidth: '120px',
+      render: (it) => <span className="font-mono text-ink font-semibold">₹{parseFloat(it.averageCostPerUnit || 0).toFixed(2)}</span>,
+    },
+    {
+      key: 'valuation',
+      header: 'Valuation',
+      minWidth: '120px',
+      render: (it) => {
+        const val = parseFloat(it.currentStock || 0) * parseFloat(it.averageCostPerUnit || 0);
+        return <span className="font-mono text-ink font-bold">₹{Math.round(val).toLocaleString('en-IN')}</span>;
+      },
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      width: '80px',
+      render: (it) => (
+        <div className="flex items-center justify-end space-x-1">
+          <TableIconButton
+            variant="edit"
+            onClick={() => handleOpenEdit(it)}
+            title="Edit Raw Material"
+          />
+          <TableIconButton
+            variant="delete"
+            onClick={() => handleDelete(it.id)}
+            title="Delete Raw Material"
+          />
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="h-full flex flex-col p-3 md:p-3.5 font-sans space-y-2 max-w-full overflow-hidden">
       {/* Top Header */}
@@ -366,33 +481,20 @@ export default function RawMaterials() {
         </div>
       </div>
 
-      {/* Main Table Container */}
-      <div className="flex-1 min-h-0 flex flex-col bg-white border border-border rounded-lg overflow-hidden shadow-xs">
-        {/* Filter Toolbar */}
-        <div className="shrink-0 py-1.5 px-3 border-b border-border space-y-1.5 bg-gray-50/40">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+      {/* Main Table Container via Reusable DataTable */}
+      <DataTable
+        columns={materialColumns}
+        data={paginatedItems}
+        loading={loading}
+        minWidth="950px"
+        toolbar={
+          <TableToolbar>
             <div className="flex flex-wrap items-center gap-2 flex-1 max-w-xl">
-              {/* Search Box */}
-              <div className="relative flex-1 min-w-[200px]">
-                <svg
-                  className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Search fabric, thread, label, material code…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="!h-7 !min-h-0 w-full pr-2.5 text-[11px] bg-white border border-border text-ink rounded-md outline-none focus:border-accent focus:ring-1 focus:ring-accent placeholder-gray-400 !py-0 shadow-2xs"
-                  style={{ height: '28px', minHeight: '28px', paddingLeft: '2rem' }}
-                />
-              </div>
-
-              {/* Category Filter Dropdown */}
+              <SearchBar
+                value={search}
+                onChange={setSearch}
+                placeholder="Search fabric, thread, label, material code…"
+              />
               <CustomDropdown
                 value={categoryFilter}
                 onChange={(val) => setCategoryFilter(val)}
@@ -401,103 +503,34 @@ export default function RawMaterials() {
                 buttonClassName="!h-7 !min-h-0 !rounded-md"
               />
             </div>
-          </div>
-        </div>
-
-        {/* Scrollable Table */}
-        <div className="flex-1 min-h-0 overflow-auto w-full">
-          <table className="w-full min-w-[950px] text-left text-xs text-ink">
-            <thead className="sticky top-0 z-10 bg-gray-50 text-gray-500 uppercase text-[9px] font-bold tracking-wider border-b border-border shadow-2xs">
-              <tr>
-                <th className="px-2.5 py-2 text-center w-10 bg-gray-50">#</th>
-                <th className="px-3 py-2 min-w-[130px] bg-gray-50">Code</th>
-                <th className="px-3 py-2 min-w-[220px] bg-gray-50">Raw Material Name</th>
-                <th className="px-3 py-2 min-w-[120px] bg-gray-50">Category</th>
-                <th className="px-3 py-2 min-w-[120px] bg-gray-50">Current Stock</th>
-                <th className="px-3 py-2 min-w-[100px] bg-gray-50">UOM</th>
-                <th className="px-3 py-2 min-w-[120px] bg-gray-50">Avg Rate / Unit</th>
-                <th className="px-3 py-2 min-w-[120px] bg-gray-50">Valuation</th>
-                <th className="px-3 py-2 text-right w-24 bg-gray-50">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {loading ? (
-                <tr>
-                  <td colSpan="9" className="px-4 py-8 text-center text-gray-500">
-                    <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    <span className="text-xs">Loading raw materials…</span>
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan="9" className="px-4 py-8 text-center text-gray-500">
-                    <p className="font-semibold text-ink text-xs mb-0.5">No raw materials found</p>
-                    <p className="text-gray-400 text-[11px] mb-3">Add cotton fabrics, trims, buttons, and polybags to start tracking.</p>
-                    <button
-                      onClick={handleOpenAdd}
-                      className="px-3 py-1.5 text-xs font-semibold bg-ink text-white rounded-md hover:bg-black"
-                    >
-                      + Add First Raw Material
-                    </button>
-                  </td>
-                </tr>
-              ) : (
-                items.map((it, idx) => {
-                  const stockNum = parseFloat(it.currentStock || 0);
-                  const minStock = parseFloat(it.minAlertStock || 0);
-                  const isLow = stockNum <= minStock;
-                  const avgRate = parseFloat(it.averageCostPerUnit || 0);
-                  const valuation = stockNum * avgRate;
-
-                  return (
-                    <tr key={it.id} className="hover:bg-blue-50/20 transition-colors">
-                      <td className="px-2.5 py-1.5 text-center text-[10.5px] font-mono text-gray-400">{idx + 1}</td>
-                      <td className="px-3 py-1.5 font-mono text-ink font-semibold text-[11px]">{it.code}</td>
-                      <td className="px-3 py-1.5 font-medium text-ink text-[11.5px]">{it.name}</td>
-                      <td className="px-3 py-1.5">
-                        <span className="inline-block text-[9px] uppercase font-bold px-1.5 py-0.2 rounded bg-gray-100 text-gray-700 capitalize">
-                          {it.category}
-                        </span>
-                      </td>
-                      <td className="px-3 py-1.5">
-                        <div className="flex items-center space-x-1.5">
-                          <span className={`font-bold font-mono text-xs ${isLow ? 'text-rose-600' : 'text-emerald-700'}`}>
-                            {stockNum.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                          </span>
-                          {isLow && (
-                            <span className="text-[8.5px] bg-rose-50 text-rose-700 border border-rose-200 px-1 py-0.2 rounded font-bold">
-                              Low
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-1.5 text-[10.5px] text-gray-600 font-medium capitalize">{it.unitOfMeasure}</td>
-                      <td className="px-3 py-1.5 font-mono text-ink font-semibold">₹{avgRate.toFixed(2)}</td>
-                      <td className="px-3 py-1.5 font-mono text-ink font-bold">₹{Math.round(valuation).toLocaleString('en-IN')}</td>
-                      <td className="px-3 py-1.5 text-right space-x-1">
-                        <button
-                          onClick={() => handleOpenEdit(it)}
-                          className="px-1.5 py-0.5 text-[10.5px] bg-gray-100 hover:bg-gray-200 text-ink rounded font-medium"
-                          title="Edit"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => handleDelete(it.id)}
-                          className="px-1.5 py-0.5 text-[10.5px] bg-rose-50 hover:bg-rose-100 text-rose-600 rounded font-medium"
-                          title="Delete"
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+          </TableToolbar>
+        }
+        emptyState={{
+          icon: '🧵',
+          title: 'No raw materials found',
+          description: 'Add cotton fabrics, trims, buttons, and polybags to start tracking.',
+          actionButton: (
+            <button
+              onClick={handleOpenAdd}
+              className="px-3 py-1.5 text-xs font-semibold bg-ink text-white rounded-md hover:bg-black mt-2"
+            >
+              + Add First Raw Material
+            </button>
+          ),
+        }}
+        pagination={{
+          page: safePage,
+          limit,
+          total: totalItems,
+          totalPages,
+          onPageChange: setPage,
+          onLimitChange: (newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+          },
+          itemName: 'materials',
+        }}
+      />
 
       {/* Add / Edit Material Modal */}
       {isAddModalOpen && (

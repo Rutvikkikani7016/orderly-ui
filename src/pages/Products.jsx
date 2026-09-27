@@ -11,6 +11,8 @@ import CustomDropdown from '../components/CustomDropdown.jsx';
 import ProductFormModal from '../components/products/ProductFormModal.jsx';
 import ProductDetailsModal from '../components/products/ProductDetailsModal.jsx';
 import ImportCatalogModal from '../components/products/ImportCatalogModal.jsx';
+import BundleComponentsModal from '../components/products/BundleComponentsModal.jsx';
+import { SearchBar, TablePagination } from '../components/common';
 
 export default function Products() {
   // State for products list and summary
@@ -31,6 +33,7 @@ export default function Products() {
 
   // Quick Details Modal State
   const [detailsModalProduct, setDetailsModalProduct] = useState(null);
+  const [bundleModalProduct, setBundleModalProduct] = useState(null);
 
   // Filters & Search with 1000ms (1s) Debouncer
   const [search, setSearch] = useState('');
@@ -428,24 +431,13 @@ export default function Products() {
         {/* Compact Search & Filter Toolbar (Fixed inside card top) */}
         <div className="shrink-0 py-1.5 px-3 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-gray-50/40">
           <div className="flex items-center space-x-2 flex-1 max-w-lg">
-            <div className="relative flex-1">
-              <svg
-                className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search SKU, title, category, or HSN…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="!h-7 !min-h-0 w-full pr-2.5 text-[11px] bg-white border border-border text-ink rounded-md outline-none focus:border-accent focus:ring-1 focus:ring-accent placeholder-gray-400 !py-0 shadow-2xs"
-                style={{ height: '28px', minHeight: '28px', paddingLeft: '2rem' }}
-              />
-            </div>
+            {/* Standardized Search Box */}
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder="Search SKU, title, category, or HSN…"
+              width="flex-1"
+            />
 
             <CustomDropdown
               value={statusFilter}
@@ -515,9 +507,16 @@ export default function Products() {
 
                       {/* Master SKU (Dedicated Column) */}
                       <td className="px-3 py-1.5 min-w-[150px]">
-                        <span className="inline-block font-mono text-[10px] font-bold bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded border border-gray-200 truncate max-w-[140px]" title={p.internalSku}>
-                          {p.internalSku}
-                        </span>
+                        <div className="flex items-center space-x-1">
+                          <span className="inline-block font-mono text-[10px] font-bold bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded border border-gray-200 truncate max-w-[140px]" title={p.internalSku}>
+                            {p.internalSku}
+                          </span>
+                          {p.type === 'bundle' && (
+                            <span className="inline-flex items-center text-[8.5px] font-bold px-1 rounded bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
+                              COMBO
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Marketplace Channel SKUs (Dedicated Column) */}
@@ -628,6 +627,19 @@ export default function Products() {
                       {/* Actions: 3-Dot Full Details Modal, Edit Icon, Delete Icon */}
                       <td className="px-3 py-1.5 text-right w-24">
                         <div className="flex items-center justify-end space-x-1">
+                          {/* Bundle / Combo Kit Configuration Button */}
+                          <button
+                            onClick={() => setBundleModalProduct(p)}
+                            title={p.type === 'bundle' ? 'Configure Combo Kit Components' : 'Convert to Combo / Bundle Kit'}
+                            className={`p-1 rounded border transition-all shadow-2xs ${
+                              p.type === 'bundle'
+                                ? 'border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100'
+                                : 'border-gray-200 bg-white hover:bg-gray-100 text-gray-500 hover:text-ink'
+                            }`}
+                          >
+                            <span className="text-[11px] leading-none">📦</span>
+                          </button>
+
                           {/* Three-Dot (Opens Full Organized Product Details Modal) */}
                           <button
                             onClick={() => setDetailsModalProduct(p)}
@@ -680,46 +692,17 @@ export default function Products() {
           </table>
         </div>
 
-        {/* Pagination (Fixed at bottom of Card) */}
+        {/* Standardized Dense Bottom Pagination */}
         {pagination.total > 0 && (
-          <div className="shrink-0 relative z-20 p-2 px-3 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-gray-500 bg-gray-50/50">
-            <div className="flex flex-wrap items-center gap-3">
-              <div>
-                Showing page <span className="text-ink font-medium">{pagination.page}</span> of{' '}
-                <span className="text-ink font-medium">{pagination.totalPages}</span> ({pagination.total} total items)
-              </div>
-              <div className="flex items-center space-x-1.5 border-l border-border pl-3">
-                <span className="text-gray-500">Rows per page:</span>
-                <CustomDropdown
-                  value={pagination.limit}
-                  onChange={(val) => {
-                    const newLimit = parseInt(val, 10);
-                    fetchCatalog(1, statusFilter, debouncedSearch, newLimit);
-                  }}
-                  options={pageSizeOptions}
-                  size="xs"
-                  placement="top"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-1.5">
-              <button
-                onClick={() => fetchCatalog(pagination.page - 1, statusFilter, debouncedSearch, pagination.limit)}
-                disabled={pagination.page <= 1}
-                className="px-3 py-1.5 bg-white hover:bg-gray-50 disabled:opacity-40 text-ink rounded border border-border shadow-xs font-medium text-xs"
-              >
-                &larr; Previous
-              </button>
-              <button
-                onClick={() => fetchCatalog(pagination.page + 1, statusFilter, debouncedSearch, pagination.limit)}
-                disabled={pagination.page >= pagination.totalPages}
-                className="px-3 py-1.5 bg-white hover:bg-gray-50 disabled:opacity-40 text-ink rounded border border-border shadow-xs font-medium text-xs"
-              >
-                Next &rarr;
-              </button>
-            </div>
-          </div>
+          <TablePagination
+            page={pagination.page}
+            limit={pagination.limit}
+            total={pagination.total}
+            totalPages={pagination.totalPages}
+            onPageChange={(newPage) => fetchCatalog(newPage, statusFilter, debouncedSearch, pagination.limit)}
+            onLimitChange={(newLimit) => fetchCatalog(1, statusFilter, debouncedSearch, newLimit)}
+            itemName="products"
+          />
         )}
       </div>
 
@@ -752,6 +735,14 @@ export default function Products() {
         product={detailsModalProduct}
         onClose={() => setDetailsModalProduct(null)}
         onEdit={(prod) => handleOpenEdit(prod)}
+      />
+
+      {/* Bundle Kit Components Modal */}
+      <BundleComponentsModal
+        product={bundleModalProduct}
+        isOpen={!!bundleModalProduct}
+        onClose={() => setBundleModalProduct(null)}
+        onSaved={() => fetchCatalog()}
       />
     </div>
   );

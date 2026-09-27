@@ -1,24 +1,34 @@
 import React from 'react';
 
 export function getStatusBadge(status) {
-  switch (status) {
+  switch (String(status || '').toLowerCase()) {
     case 'delivered':
       return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    case 'shipped':
+      return 'bg-purple-50 text-purple-700 border-purple-200';
+    case 'out_for_delivery':
+      return 'bg-violet-50 text-violet-700 border-violet-200';
+    case 'packed':
+    case 'picking':
+      return 'bg-blue-50 text-blue-700 border-blue-200';
+    case 'allocated':
+    case 'confirmed':
+      return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+    case 'on_hold':
+      return 'bg-amber-100 text-amber-800 border-amber-300 font-bold';
     case 'returned':
     case 'rto_initiated':
     case 'rto_delivered':
-      return 'bg-rose-50 text-rose-700 border-rose-200';
+      return 'bg-orange-50 text-orange-700 border-orange-200';
     case 'cancelled':
-      return 'bg-red-50 text-red-700 border-red-200';
+      return 'bg-rose-50 text-rose-700 border-rose-200';
     case 'exchanged':
-      return 'bg-purple-50 text-purple-700 border-purple-200';
-    case 'shipped':
-    case 'out_for_delivery':
-    case 'packed':
-    case 'accepted':
-      return 'bg-blue-50 text-blue-700 border-blue-200';
+      return 'bg-teal-50 text-teal-700 border-teal-200';
+    case 'placed':
+    case 'new':
+    case 'validated':
     default:
-      return 'bg-amber-50 text-amber-700 border-amber-200';
+      return 'bg-slate-100 text-slate-700 border-slate-200';
   }
 }
 

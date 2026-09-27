@@ -14,7 +14,11 @@ export default function Sidebar() {
   });
 
   // Masters parent module open/collapse state
-  const isInsideMasters = location.pathname.startsWith('/masters') || location.pathname === '/products';
+  const isInsideMasters =
+    location.pathname.startsWith('/masters') ||
+    location.pathname === '/products' ||
+    location.pathname === '/channel-listings' ||
+    location.pathname === '/warehouses';
   const [isMastersOpen, setIsMastersOpen] = useState(true);
 
   function toggleSidebar() {
@@ -182,7 +186,7 @@ export default function Sidebar() {
                 </div>
                 <div className="flex items-center space-x-1">
                   <span className="text-[9px] bg-accent-light text-accent px-1.5 py-0.2 rounded font-bold">
-                    3
+                    5
                   </span>
                   <svg
                     className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${
@@ -215,6 +219,40 @@ export default function Sidebar() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                     </svg>
                     <span>Product Master</span>
+                  </NavLink>
+
+                  {/* Sub-module: Channel Listings */}
+                  <NavLink
+                    to="/masters/channel-listings"
+                    className={({ isActive }) =>
+                      `flex items-center space-x-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all ${
+                        isActive || location.pathname === '/channel-listings'
+                          ? 'bg-accent-light text-accent-dark font-bold'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-ink'
+                      }`
+                    }
+                  >
+                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    <span>Channel Listings</span>
+                  </NavLink>
+
+                  {/* Sub-module: Warehouse Master */}
+                  <NavLink
+                    to="/masters/warehouses"
+                    className={({ isActive }) =>
+                      `flex items-center space-x-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all ${
+                        isActive || location.pathname === '/warehouses'
+                          ? 'bg-accent-light text-accent-dark font-bold'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-ink'
+                      }`
+                    }
+                  >
+                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <span>Warehouse Master</span>
                   </NavLink>
 
                   {/* Sub-module: Supplier Master */}
@@ -295,7 +333,47 @@ export default function Sidebar() {
             {!isCollapsed && <span className="truncate">Raw Materials</span>}
           </NavLink>
 
-          {/* 6. Platforms */}
+          {/* 6. Inventory & Stock Ledger */}
+          <NavLink
+            to="/inventory"
+            title={isCollapsed ? 'Inventory Ledger' : undefined}
+            className={({ isActive }) =>
+              `flex items-center ${
+                isCollapsed ? 'justify-center px-0 py-2' : 'space-x-3 px-3 py-2'
+              } rounded-lg text-xs font-medium transition-all ${
+                isActive
+                  ? 'bg-accent-light text-accent-dark font-semibold border border-accent/20 shadow-2xs'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-ink'
+              }`
+            }
+          >
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            {!isCollapsed && <span className="truncate">Inventory Ledger</span>}
+          </NavLink>
+
+          {/* Fulfillment & WMS Lite */}
+          <NavLink
+            to="/fulfillment"
+            title={isCollapsed ? 'Fulfillment & WMS' : undefined}
+            className={({ isActive }) =>
+              `flex items-center ${
+                isCollapsed ? 'justify-center px-0 py-2' : 'space-x-3 px-3 py-2'
+              } rounded-lg text-xs font-medium transition-all ${
+                isActive
+                  ? 'bg-accent-light text-accent-dark font-semibold border border-accent/20 shadow-2xs'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-ink'
+              }`
+            }
+          >
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
+            {!isCollapsed && <span className="truncate">Fulfillment & WMS</span>}
+          </NavLink>
+
+          {/* 7. Platforms */}
           <NavLink
             to="/onboarding"
             title={isCollapsed ? 'Platforms' : undefined}

@@ -33,3 +33,13 @@ export async function importCatalogSpreadsheet(formData) {
   });
   return data.data;
 }
+
+export async function getProductBundle(id) {
+  const { data } = await apiClient.get(`/products/${id}/bundle`);
+  return data.data;
+}
+
+export async function setProductBundle(id, components) {
+  const { data } = await apiClient.put(`/products/${id}/bundle`, { components });
+  return data.data;
+}

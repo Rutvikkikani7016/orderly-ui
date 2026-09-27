@@ -17,6 +17,10 @@ import Manufacturing from './pages/Manufacturing.jsx';
 import RawMaterials from './pages/RawMaterials.jsx';
 import SupplierMaster from './pages/SupplierMaster.jsx';
 import CategoryUnitMaster from './pages/CategoryUnitMaster.jsx';
+import Inventory from './pages/Inventory.jsx';
+import ChannelListings from './pages/ChannelListings.jsx';
+import Fulfillment from './pages/Fulfillment.jsx';
+import WarehouseMaster from './pages/WarehouseMaster.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 
 function PublicRoute({ children }) {
@@ -84,10 +88,16 @@ export default function App() {
         <Route path="/orders" element={<Orders />} />
         <Route path="/products" element={<Products />} />
         <Route path="/masters/products" element={<Products />} />
+        <Route path="/masters/channel-listings" element={<ChannelListings />} />
+        <Route path="/channel-listings" element={<ChannelListings />} />
+        <Route path="/masters/warehouses" element={<WarehouseMaster />} />
+        <Route path="/warehouses" element={<WarehouseMaster />} />
         <Route path="/masters/suppliers" element={<SupplierMaster />} />
         <Route path="/masters/categories-units" element={<CategoryUnitMaster />} />
         <Route path="/manufacturing" element={<Manufacturing />} />
         <Route path="/raw-materials" element={<RawMaterials />} />
+        <Route path="/inventory" element={<Inventory />} />
+        <Route path="/fulfillment" element={<Fulfillment />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/profile" element={<Profile />} />
       </Route>

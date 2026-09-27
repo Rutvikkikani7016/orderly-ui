@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { getSuppliers, createSupplier, updateSupplier, deleteSupplier } from '../api/manufacturing.js';
+import { DataTable, TableToolbar, SearchBar, TableIconButton } from '../components/common/index.js';
 
 export default function SupplierMaster() {
   const [suppliers, setSuppliers] = useState([]);
@@ -10,9 +11,14 @@ export default function SupplierMaster() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(15);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
+      setPage(1);
     }, 1000);
     return () => clearTimeout(timer);
   }, [search]);
@@ -125,7 +131,94 @@ export default function SupplierMaster() {
     );
   });
 
+  const totalSuppliers = filteredSuppliers.length;
+  const totalPages = Math.max(1, Math.ceil(totalSuppliers / limit));
+  const safePage = Math.min(page, totalPages);
+  const paginatedSuppliers = filteredSuppliers.slice((safePage - 1) * limit, safePage * limit);
+
   const uniqueCities = new Set(suppliers.map((s) => s.city).filter(Boolean)).size;
+
+  // Standardized Table Columns
+  const supplierColumns = [
+    {
+      key: 'index',
+      header: '#',
+      align: 'center',
+      width: '40px',
+      render: (_, idx, pageNum, pageSize) => (
+        <span className="font-mono text-gray-400 text-[10.5px]">
+          {(pageNum - 1) * pageSize + idx + 1}
+        </span>
+      ),
+    },
+    {
+      key: 'name',
+      header: 'Supplier / Mill Name',
+      minWidth: '200px',
+      render: (s) => (
+        <div>
+          <span className="font-bold text-ink block text-[11.5px] leading-tight">{s.name}</span>
+          {s.notes && <span className="text-[10px] text-gray-400 truncate max-w-xs block">{s.notes}</span>}
+        </div>
+      ),
+    },
+    {
+      key: 'contactPerson',
+      header: 'Contact Person',
+      minWidth: '140px',
+      render: (s) => <span className="text-[11px] text-gray-700">{s.contactPerson || '—'}</span>,
+    },
+    {
+      key: 'phone',
+      header: 'Phone / Mobile',
+      minWidth: '130px',
+      render: (s) => <span className="font-mono text-[11px] text-ink">{s.phone || '—'}</span>,
+    },
+    {
+      key: 'email',
+      header: 'Email',
+      minWidth: '160px',
+      render: (s) => (
+        <span className="text-[10.5px] text-gray-600 truncate max-w-[160px] block">{s.email || '—'}</span>
+      ),
+    },
+    {
+      key: 'gstin',
+      header: 'GSTIN',
+      minWidth: '150px',
+      render: (s) => <span className="font-mono text-[10.5px] font-medium text-gray-700">{s.gstin || '—'}</span>,
+    },
+    {
+      key: 'city',
+      header: 'City / State',
+      minWidth: '140px',
+      render: (s) => (
+        <span className="text-[10.5px] text-gray-600">
+          {[s.city, s.state].filter(Boolean).join(', ') || '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      width: '80px',
+      render: (s) => (
+        <div className="flex items-center justify-end space-x-1">
+          <TableIconButton
+            variant="edit"
+            onClick={() => handleOpenEdit(s)}
+            title="Edit supplier record"
+          />
+          <TableIconButton
+            variant="delete"
+            onClick={() => handleDelete(s.id)}
+            title="Delete supplier"
+          />
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="h-full flex flex-col p-3 md:p-3.5 font-sans space-y-2 max-w-full overflow-hidden">
@@ -238,104 +331,47 @@ export default function SupplierMaster() {
         </div>
       </div>
 
-      {/* Main Table Card */}
-      <div className="flex-1 min-h-0 flex flex-col bg-white border border-border rounded-lg overflow-hidden shadow-xs">
-        {/* Toolbar */}
-        <div className="shrink-0 py-1.5 px-3 border-b border-border bg-gray-50/40">
-          <div className="relative max-w-sm">
-            <svg
-              className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search vendor name, contact person, GSTIN, city…"
+      {/* Main Table Card via Reusable DataTable */}
+      <DataTable
+        columns={supplierColumns}
+        data={paginatedSuppliers}
+        loading={loading}
+        minWidth="950px"
+        toolbar={
+          <TableToolbar>
+            <SearchBar
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="!h-7 !min-h-0 w-full pr-2.5 text-[11px] bg-white border border-border text-ink rounded-md outline-none focus:border-accent focus:ring-1 focus:ring-accent placeholder-gray-400 !py-0 shadow-2xs"
-              style={{ height: '28px', minHeight: '28px', paddingLeft: '2rem' }}
+              onChange={setSearch}
+              placeholder="Search vendor name, contact person, GSTIN, city…"
             />
-          </div>
-        </div>
-
-        {/* Scrollable Table */}
-        <div className="flex-1 min-h-0 overflow-auto w-full">
-          <table className="w-full min-w-[950px] text-left text-xs text-ink">
-            <thead className="sticky top-0 z-10 bg-gray-50 text-gray-500 uppercase text-[9px] font-bold tracking-wider border-b border-border shadow-2xs">
-              <tr>
-                <th className="px-2.5 py-2 text-center w-10 bg-gray-50">#</th>
-                <th className="px-3 py-2 min-w-[200px] bg-gray-50">Supplier / Mill Name</th>
-                <th className="px-3 py-2 min-w-[140px] bg-gray-50">Contact Person</th>
-                <th className="px-3 py-2 min-w-[130px] bg-gray-50">Phone / Mobile</th>
-                <th className="px-3 py-2 min-w-[160px] bg-gray-50">Email</th>
-                <th className="px-3 py-2 min-w-[150px] bg-gray-50">GSTIN</th>
-                <th className="px-3 py-2 min-w-[140px] bg-gray-50">City / State</th>
-                <th className="px-3 py-2 text-right w-24 bg-gray-50">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {loading ? (
-                <tr>
-                  <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
-                    <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    <span className="text-xs">Loading suppliers…</span>
-                  </td>
-                </tr>
-              ) : filteredSuppliers.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
-                    <p className="font-semibold text-ink text-xs mb-0.5">No suppliers found</p>
-                    <p className="text-gray-400 text-[11px] mb-3">Add your textile mills and packaging vendors to track raw material purchases.</p>
-                    <button
-                      onClick={handleOpenAdd}
-                      className="px-3 py-1.5 text-xs font-semibold bg-ink text-white rounded-md hover:bg-black"
-                    >
-                      + Add First Supplier
-                    </button>
-                  </td>
-                </tr>
-              ) : (
-                filteredSuppliers.map((s, idx) => (
-                  <tr key={s.id} className="hover:bg-blue-50/20 transition-colors">
-                    <td className="px-2.5 py-1.5 text-center text-[10.5px] font-mono text-gray-400">{idx + 1}</td>
-                    <td className="px-3 py-1.5">
-                      <span className="font-bold text-ink block text-[11.5px] leading-tight">{s.name}</span>
-                      {s.notes && <span className="text-[10px] text-gray-400 truncate max-w-xs block">{s.notes}</span>}
-                    </td>
-                    <td className="px-3 py-1.5 text-[11px] text-gray-700">{s.contactPerson || '—'}</td>
-                    <td className="px-3 py-1.5 font-mono text-[11px] text-ink">{s.phone || '—'}</td>
-                    <td className="px-3 py-1.5 text-[10.5px] text-gray-600 truncate max-w-[160px]">{s.email || '—'}</td>
-                    <td className="px-3 py-1.5 font-mono text-[10.5px] font-medium text-gray-700">{s.gstin || '—'}</td>
-                    <td className="px-3 py-1.5 text-[10.5px] text-gray-600">
-                      {[s.city, s.state].filter(Boolean).join(', ') || '—'}
-                    </td>
-                    <td className="px-3 py-1.5 text-right space-x-1">
-                      <button
-                        onClick={() => handleOpenEdit(s)}
-                        className="px-1.5 py-0.5 text-[10.5px] bg-gray-100 hover:bg-gray-200 text-ink rounded font-medium"
-                        title="Edit"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDelete(s.id)}
-                        className="px-1.5 py-0.5 text-[10.5px] bg-rose-50 hover:bg-rose-100 text-rose-600 rounded font-medium"
-                        title="Delete"
-                      >
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+          </TableToolbar>
+        }
+        emptyState={{
+          icon: '🏭',
+          title: 'No suppliers found',
+          description: 'Add your textile mills and packaging vendors to track raw material purchases.',
+          actionButton: (
+            <button
+              onClick={handleOpenAdd}
+              className="px-3 py-1.5 text-xs font-semibold bg-ink text-white rounded-md hover:bg-black"
+            >
+              + Add First Supplier
+            </button>
+          ),
+        }}
+        pagination={{
+          page: safePage,
+          limit,
+          total: totalSuppliers,
+          totalPages,
+          onPageChange: setPage,
+          onLimitChange: (newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+          },
+          itemName: 'suppliers',
+        }}
+      />
 
       {/* Add / Edit Supplier Modal */}
       {isModalOpen && (
