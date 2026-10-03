@@ -32,6 +32,7 @@ export default function ChannelListings() {
 
   // Products lookup for mapping modal
   const [availableProducts, setAvailableProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedListing, setSelectedListing] = useState(null);
@@ -91,14 +92,27 @@ export default function ChannelListings() {
     fetchData();
   }, [fetchData]);
 
-  // Load products for dropdown mapping
-  useEffect(() => {
-    getProducts({ limit: 200, status: 'active' })
-      .then((data) => setAvailableProducts(data.products || []))
-      .catch((err) => console.error('Failed to prefetch products:', err));
+  // Load master products for dropdown mapping
+  const loadMasterProducts = useCallback(async () => {
+    try {
+      setLoadingProducts(true);
+      const data = await getProducts({ limit: 500, status: 'all' });
+      setAvailableProducts(data.products || []);
+    } catch (err) {
+      console.error('Failed to prefetch master products:', err);
+    } finally {
+      setLoadingProducts(false);
+    }
   }, []);
 
+  useEffect(() => {
+    loadMasterProducts();
+  }, [loadMasterProducts]);
+
   const handleOpenMapModal = (listing = null) => {
+    if (availableProducts.length === 0) {
+      loadMasterProducts();
+    }
     if (listing) {
       setMapForm({
         platform: listing.platform || 'flipkart',
@@ -630,19 +644,31 @@ export default function ChannelListings() {
               </div>
 
               <div>
-                <label className="block text-gray-700 font-semibold mb-1">
-                  Internal Master Product SKU <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-gray-700 font-semibold">
+                    Internal Master Product SKU <span className="text-red-500">*</span>
+                  </label>
+                  {loadingProducts && (
+                    <span className="text-[10px] text-primary-600 font-medium animate-pulse">Loading products...</span>
+                  )}
+                </div>
                 <select
                   value={mapForm.internalSku}
                   onChange={(e) => setMapForm({ ...mapForm, internalSku: e.target.value })}
                   required
+                  disabled={loadingProducts}
                   className="w-full h-8 border border-gray-300 rounded px-2 bg-white font-mono"
                 >
-                  <option value="">-- Select Master Product --</option>
+                  <option value="">
+                    {loadingProducts
+                      ? '-- Loading Master Products... --'
+                      : availableProducts.length === 0
+                      ? '-- No Master Products Found --'
+                      : '-- Select Master Product --'}
+                  </option>
                   {availableProducts.map((p) => (
                     <option key={p.id} value={p.internalSku}>
-                      {p.internalSku} - {p.title} ({p.type === 'bundle' ? 'COMBO' : `Stock: ${p.stock}`})
+                      {p.internalSku} - {p.title} ({p.type === 'bundle' ? 'COMBO' : `Stock: ${p.stock ?? 0}`})
                     </option>
                   ))}
                 </select>
