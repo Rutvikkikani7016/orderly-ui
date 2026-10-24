@@ -20,6 +20,9 @@ import CategoryUnitMaster from './pages/CategoryUnitMaster.jsx';
 import Inventory from './pages/Inventory.jsx';
 import ChannelListings from './pages/ChannelListings.jsx';
 import Fulfillment from './pages/Fulfillment.jsx';
+import Returns from './pages/Returns.jsx';
+import Reconciliation from './pages/Reconciliation.jsx';
+import RoutingAndForecasting from './pages/RoutingAndForecasting.jsx';
 import WarehouseMaster from './pages/WarehouseMaster.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 
@@ -98,6 +101,9 @@ export default function App() {
         <Route path="/raw-materials" element={<RawMaterials />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/fulfillment" element={<Fulfillment />} />
+        <Route path="/returns" element={<Returns />} />
+        <Route path="/reconciliation" element={<Reconciliation />} />
+        <Route path="/routing-forecasting" element={<RoutingAndForecasting />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/profile" element={<Profile />} />
       </Route>

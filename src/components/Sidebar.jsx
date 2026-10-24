@@ -373,6 +373,66 @@ export default function Sidebar() {
             {!isCollapsed && <span className="truncate">Fulfillment & WMS</span>}
           </NavLink>
 
+          {/* Returns & Reverse Logistics */}
+          <NavLink
+            to="/returns"
+            title={isCollapsed ? 'Returns & RTO' : undefined}
+            className={({ isActive }) =>
+              `flex items-center ${
+                isCollapsed ? 'justify-center px-0 py-2' : 'space-x-3 px-3 py-2'
+              } rounded-lg text-xs font-medium transition-all ${
+                isActive
+                  ? 'bg-accent-light text-accent-dark font-semibold border border-accent/20 shadow-2xs'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-ink'
+              }`
+            }
+          >
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z" />
+            </svg>
+            {!isCollapsed && <span className="truncate">Returns & RTO</span>}
+          </NavLink>
+
+          {/* Reconciliation & Financial Audit */}
+          <NavLink
+            to="/reconciliation"
+            title={isCollapsed ? 'Reconciliation' : undefined}
+            className={({ isActive }) =>
+              `flex items-center ${
+                isCollapsed ? 'justify-center px-0 py-2' : 'space-x-3 px-3 py-2'
+              } rounded-lg text-xs font-medium transition-all ${
+                isActive
+                  ? 'bg-accent-light text-accent-dark font-semibold border border-accent/20 shadow-2xs'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-ink'
+              }`
+            }
+          >
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z" />
+            </svg>
+            {!isCollapsed && <span className="truncate">Reconciliation</span>}
+          </NavLink>
+
+          {/* Smart Routing & Demand Forecasting */}
+          <NavLink
+            to="/routing-forecasting"
+            title={isCollapsed ? 'Routing & Forecast' : undefined}
+            className={({ isActive }) =>
+              `flex items-center ${
+                isCollapsed ? 'justify-center px-0 py-2' : 'space-x-3 px-3 py-2'
+              } rounded-lg text-xs font-medium transition-all ${
+                isActive
+                  ? 'bg-accent-light text-accent-dark font-semibold border border-accent/20 shadow-2xs'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-ink'
+              }`
+            }
+          >
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            {!isCollapsed && <span className="truncate">Routing & Forecast</span>}
+          </NavLink>
+
           {/* 7. Platforms */}
           <NavLink
             to="/onboarding"
